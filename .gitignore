@@ -1,4 +1,13 @@
+/cache
+/data
+/tslogs
+/uploadfile
 .idea
 .htaccess
 .DS_Store
+CHANGELOG.TXT
+composer.json
 composer.lock
+INSTALL.TXT
+LICENSE.TXT
+README.md
