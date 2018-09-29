@@ -1,0 +1,60 @@
+{php include pubTemplate("header_admin")}
+
+<!--main-->
+<div class="midder">
+
+{php include template("admin/menu");}
+
+
+<form method="post" action="{SITE_URL}index.php?app=home&ac=admin&mg=info&ts=adddo">
+<table class="table table-hover">
+
+
+    <tbody>
+
+
+
+    <tr>
+        <td>标题:</td><td><input style="width:300px;padding:5px;" name="title"  /></td>
+    </tr>
+
+    <tr>
+        <td>内容:</td><td>
+
+        <div id="tseditor"></div>
+        <div style="display: none;">
+            <textarea name="content"></textarea>
+        </div>
+
+    </td>
+    </tr>
+
+
+    <tr>
+        <td>排序ID:</td><td><input name="orderid" /></td>
+    </tr>
+
+    <tr>
+        <td></td><td>
+
+
+        <input class="btn btn-primary" type="submit" value="提交" />
+
+    </td>
+    </tr>
+
+    </tbody>
+
+
+
+</table>
+</form>
+
+
+</div>
+
+<script type="text/javascript" charset="utf-8" src="{SITE_URL}public/js/xss.js"></script>
+<script type="text/javascript" charset="utf-8" src="{SITE_URL}plugins/pubs/wangeditor/wangEditor.js"></script>
+<script type="text/javascript" charset="utf-8" src="{SITE_URL}plugins/pubs/wangeditor/load.js"></script>
+
+{php include pubTemplate("footer_admin")}

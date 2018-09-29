@@ -1,0 +1,41 @@
+{php include pubTemplate("header_admin")}
+
+<!--main-->
+<div class="midder">
+{template anti_menu}
+
+
+<div>
+<form method="post" action="{SITE_URL}index.php?app=system&ac=anti&ts=worddo">
+词语：<input name="word" /><input type="submit" value="添加" />
+
+
+    <a href="{SITE_URL}index.php?app=system&ac=anti&ts=worddelall">一键删除所有敏感词</a>
+
+
+</form>
+</div>
+
+
+<div>
+<table class="table table-hover">
+<thead class="thead-light">
+<tr><th>ID</th><th>敏感词</th><th>添加时间</th><th>操作</th></tr>
+</thead>
+
+<tbody class="fs12 c9">
+{loop $arrWord $key $item}
+<tr><td>{$item['id']}</td><td>{$item['word']}</td><td>{$item['addtime']}</td><td><a href="{SITE_URL}index.php?app=system&ac=anti&ts=worddel&id={$item['id']}"><i class="far fa-trash-alt"></i> 删除</a></td></tr>
+{/loop}
+</tbody>
+
+
+
+</table>
+
+</div>
+
+
+</div>
+
+{php include pubTemplate("footer_admin")}
