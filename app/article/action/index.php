@@ -41,6 +41,6 @@ $arrHot30 = $new ['article']->getHotArticle ( 30 );
 
 $sitekey = $TS_APP['appkey'];
 $sitedesc = $TS_APP['appdesc'];
-$title = '文章';
+$title = 'Article';
 
 include template ( 'index' );
