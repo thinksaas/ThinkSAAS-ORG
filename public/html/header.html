@@ -100,7 +100,7 @@
         <div class="collapse navbar-collapse" id="navbarText">
             <ul class="navbar-nav mr-auto">
                 <li class="nav-item active">
-                    <a class="nav-link" href="{SITE_URL}">首页</a>
+                    <a class="nav-link" href="{SITE_URL}">Home</a>
                 </li>
 
                 {php doAction('pub_header_nav')}
@@ -109,12 +109,12 @@
         </div>
 
 
-        <div class="mr-3"><a class="text-light" href="{tsUrl('search')}"><i class="fas fa-search"></i>搜索</a></div>
+        <div class="mr-3"><a class="text-light" href="{tsUrl('search')}"><i class="fas fa-search"></i>Search</a></div>
 
 
         {if $GLOBALS['TS_USER']}
         <div class="mr-3">
-            <a class="text-light" href="{tsUrl('message','my')}"><span class="badge badge-pill badge-light" id="newmsg">0</span>  消息</a>
+            <a class="text-light" href="{tsUrl('message','my')}"><span class="badge badge-pill badge-light" id="newmsg">0</span>  message</a>
         </div>
         {/if}
 
@@ -132,10 +132,10 @@
             <div class="ts-dropdown dropdown-list pull-right">
                 <ul class="ts-dropdown-list">
                     <li><a href="{tsUrl('my')}" >我的社区</a></li>
-                    <li><a href="{tsUrl('my','setting',array('ts'=>'base'))}" >设置</a></li>
+                    <li><a href="{tsUrl('my','setting',array('ts'=>'base'))}" >Setting</a></li>
                     {if $GLOBALS['TS_SITE']['isinvite']=='1'}
                     <li>
-                        <a href="{tsUrl('user','invite')}">邀请</a>
+                        <a href="{tsUrl('user','invite')}">Invite</a>
                     </li>
                     {/if}
 
