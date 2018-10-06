@@ -21,10 +21,10 @@
 <div class="clear"></div>
 
 <ul class="other">
-<li class="br"><span class="fs14"><a href="{tsUrl('user','group',array('id'=>$strUser['userid']))}">{$strUser['count_group']}</a></span><br />小组</li>
-<li class="br"><span class="fs14"><a href="{tsUrl('user','topic',array('id'=>$strUser['userid']))}">{$strUser['count_topic']}</a></span><br />帖子</li>
-<li class="br"><span class="fs14"><a href="{tsUrl('user','followed',array('id'=>$strUser['userid']))}">{$strUser['count_followed']}</a></span><br />粉丝</li>
-<li><span class="fs14"><a href="{tsUrl('user','follow',array('id'=>$strUser['userid']))}">{$strUser['count_follow']}</a></span><br />关注</li>
+<li class="br"><span class="fs14"><a href="{tsUrl('user','group',array('id'=>$strUser['userid']))}">{$strUser['count_group']}</a></span><br />Group</li>
+<li class="br"><span class="fs14"><a href="{tsUrl('user','topic',array('id'=>$strUser['userid']))}">{$strUser['count_topic']}</a></span><br />Topic</li>
+<li class="br"><span class="fs14"><a href="{tsUrl('user','followed',array('id'=>$strUser['userid']))}">{$strUser['count_followed']}</a></span><br />Fans</li>
+<li><span class="fs14"><a href="{tsUrl('user','follow',array('id'=>$strUser['userid']))}">{$strUser['count_follow']}</a></span><br />Follow</li>
 </ul>
 
 <div class="clear"></div>
@@ -70,7 +70,7 @@
 
 <input type="hidden" name="cktime" value="2592000" />
 <input type="hidden" name="token" value="{$_SESSION['token']}" />
-<button type="submit" class="btn btn-sm btn-info">登 录</button>
+<button type="submit" class="btn btn-sm btn-info">Sign In</button>
 
     <a class="btn btn-sm text-black-50" href="{tsUrl('user','register')}">还没有注册？</a>
 

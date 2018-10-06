@@ -9,17 +9,9 @@ function tag(){
 		$arrTag[$key]['tagname'] = tsTitle($item['tagname']);
 	}
 
-	//echo '<div class="bbox">'.doAction('gobad','home_left_1').'</div>';
-	
-	echo '<div class="card">';
-	echo '<div class="card-header">热门标签<small class="float-right"><a class="text-black-50" href="'.tsUrl('group','tags').'">更多</a></small></div>';
-	echo '<div class="card-body">';
-	foreach($arrTag as $key=>$item){
-		echo '<a class="badge badge-secondary mr-2 fw300" href="'.tsUrl('group','tag',array('id'=>urlencode($item['tagname']))).'">'.$item['tagname'].'</a>';
-	}
-	echo '</div></div>';
-	
-	//echo '<div class="bbox">'.doAction('gobad','home_left_2').'</div>';
+
+    include template('tag','tag');
+
 	
 }
 

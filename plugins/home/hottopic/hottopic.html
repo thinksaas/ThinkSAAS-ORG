@@ -1,0 +1,12 @@
+<div class="card">
+<div class="card-header">Hot Topic</div>
+<div class="card-body">
+    <div class="commlist">
+        <ul>
+            {$arrHotTopics $key $item}
+            <li><a href="{tsUrl('group','topic',array('id'=>$item['topicid']))}">{php echo cututf8(stripslashes($item['title']),0,20,false)}</a></li>
+            {/loop}
+            </ul>
+        </div>
+    </div>
+</div>
