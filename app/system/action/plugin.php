@@ -9,19 +9,37 @@ switch($ts){
 		foreach($arrApps as $key=>$item){
 		    $arrAppsAbout[$item] = fileRead('app/'.$item.'/about.php');
         }
+
+
+        //print_r($arrAppsAbout);
+
 	
 		$apps = tsFilter($_GET['apps']);
-	
+
+		$hook = trim($_GET['hook']);
+
+
 		$arrPlugins = tsScanDir('plugins/'.$apps);
 	
 		foreach($arrPlugins as $key=>$item){
 			if(is_file('plugins/'.$apps.'/'.$item.'/about.php')){
-				$arrPlugin[$key]['name'] = $item;
-				$arrPlugin[$key]['about'] = require_once 'plugins/'.$apps.'/'.$item.'/about.php';
+				$arrPlugin1[$key]['name'] = $item;
+				$arrPlugin1[$key]['about'] = require_once 'plugins/'.$apps.'/'.$item.'/about.php';
 			}
 		}
+
+		if($arrPlugin1 && $hook){
+		    foreach($arrPlugin1 as $key=>$item){
+                if($item['about']['hook']==$hook){
+                    $arrPlugin[] = $item;
+                }
+            }
+        }else{
+		    $arrPlugin = $arrPlugin1;
+        }
 		
 		$app_plugins = fileRead('data/'.$apps.'_plugins.php');
+
 		if($app_plugins==''){
 			$app_plugins = $tsMySqlCache->get($apps.'_plugins');
 		}
@@ -55,8 +73,12 @@ switch($ts){
 			qiMsg("插件停用成功！");
 			
 		}elseif($isused == '1'){
+
+            $pkey = array_search($pname,$app_plugins);
+            unset($app_plugins[$pkey]);
 		
 			array_push($app_plugins,$pname);
+
 			if(file_exists('plugins/'.$apps.'/'.$pname.'/install.sql')){
 				$sql=file_get_contents('plugins/'.$apps.'/'.$pname.'/install.sql');
 				$sql=str_replace('ts_',''.dbprefix.'',$sql);

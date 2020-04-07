@@ -1,12 +1,12 @@
 <?php
 defined('IN_TS') or die('Access Denied.');
 return array(
-	'name'	=> '我的社区',
+	'name'	=> 'My',
 	'version'	=> '1.2',
-	'desc'	=> '我的社区',
+	'desc'	=> 'My community',
 	'url' => 'http://www.thinksaas.cn',
 	'email' => 'thinksaas@qq.com',
-	'author' => '邱君',
+	'author' => 'Qiu Jun',
 	'author_url' => 'http://www.thinksaas.cn',
 	'isoption'	=> '0',
 	'isinstall'	=> '1',

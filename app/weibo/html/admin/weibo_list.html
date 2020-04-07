@@ -11,7 +11,7 @@
 
 
     <thead class="thead-light">
-    <tr><th>ID</th><th>UserID</th><th>Content</th><th>操作</th></tr>
+    <tr><th>ID</th><th>UserID</th><th>内容</th><th>操作</th></tr>
     </thead>
 
 
@@ -19,10 +19,10 @@
     <tbody>
 
     {loop $arrWeibo $key $item}
-    <tr><td>{$item['weiboid']}</td><td>{$item['userid']}</td><td>{php echo tsDecode($item['content'])}</td><td>
+    <tr><td>{$item['weiboid']}</td><td>{$item['userid']}</td><td>{$item['title']}</td><td>
 
 
-        <a href="{SITE_URL}index.php?app=weibo&ac=admin&mg=weibo&ts=isaudit&weiboid={$item['weiboid']}">
+        <a href="{SITE_URL}index.php?app=weibo&ac=admin&mg=isaudit&weiboid={$item['weiboid']}">
             {if $item['isaudit']==0}
             [取消审核]
             {else}

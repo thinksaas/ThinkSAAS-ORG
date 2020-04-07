@@ -2,6 +2,13 @@
 //环境配置文件
 return array(
 
+    //redis配置
+    'redis'=>array(
+        'tcp'=>'tcp://127.0.0.1:6379',
+        'host'=>'127.0.0.1',
+        'port'=>'6379',
+    ),
+
 	//Memcache配置
 	'memcache' => array(
 		//'host' => '127.0.0.1',
@@ -14,8 +21,11 @@ return array(
 	//是否开启显示插件钩子
 	'hook' => false,
 
-	//是否开启数据库存取session  暂时还有点问题预留
-	'session' => false,
+	//session存取方式，默认位本地存储，支持redis存储
+	'session' => '',
+
+	//对象-关系映射(数据库操作，查询构造器，模型等。php环境低于7.1切勿开启)
+	'orm'=>false,
 
 	//存储session文件在cache/sessions/目录下，如果IIS环境出现登陆后无法退出请将sessionpath前注释去掉，启用自定义session存储目录
 	//'sessionpath'=>'sessions',
@@ -72,14 +82,14 @@ return array(
 	 */
 	'info' => array(
 		'name' => 'ThinkSAAS',
-		'url' => 'http://thinksaas.org/',
+		'url' => 'https://www.thinksaas.org/',
 		'email' => 'qiujun@thinksaas.cn',
 		'qq' => '1078700473',
 		'weixin' => 'thinksaas',
 		'copyright' => 'ThinkSAAS',
-		'copyurl' => 'http://thinksaas.org/',
+		'copyurl' => 'http://www.thinksaas.cn/',
 		'year' => '2012',#创立时间2012年
-		'author' => 'Jun Qiu',
+		'author' => 'Qiu Jun',
 	),
 	
 );

@@ -1,22 +1,20 @@
 <?php 
 defined('IN_TS') or die('Access Denied.');
 
-$page = isset($_GET['page']) ? intval($_GET['page']) : '1';
+$page = tsIntval($_GET['page'],1);
 
 $url = tsUrl('photo','index',array('page'=>''));
 
 $lstart = $page*30-30;
 
-$arrAlbum = $new['photo']->findAll('photo_album',array(
-	'isaudit'=>0,
-),'albumid desc',null,$lstart.',30');
+$arrAlbum = $new['photo']->findAll('photo_album',"`count_photo`>0 and `isaudit`=0",'albumid desc',null,$lstart.',30');
 
 foreach($arrAlbum as $key=>$item){
-	$arrAlbum[$key]['albumname'] = stripslashes($item['albumname']);
-	$arrAlbum[$key]['albumdesc'] = stripslashes($item['albumdesc']);
+	$arrAlbum[$key]['albumname'] = tstitle($item['albumname']);
+	$arrAlbum[$key]['albumdesc'] = tstitle($item['albumdesc']);
 }
 
-$albumNum = $new['photo']->findCount('photo_album');
+$albumNum = $new['photo']->findCount('photo_album',"`count_photo`>0 and `isaudit`=0");
 
 $pageUrl = pagination($albumNum, 30, $page, $url);
 

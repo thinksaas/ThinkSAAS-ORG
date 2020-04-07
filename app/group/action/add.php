@@ -4,8 +4,14 @@ defined ( 'IN_TS' ) or die ( 'Access Denied.' );
 // 用户是否登录
 $userid = aac ( 'user' )->isLogin ();
 
+//判断用户是否存在
+if(aac('user')->isUser($userid)==false) tsNotice('不好意思，用户不存在！');
+
 //判断发布者状态
 if(aac('user')->isPublisher()==false) tsNotice('不好意思，你还没有权限发布内容！');
+
+//发布时间限制
+if(aac('system')->pubTime()==false) tsNotice('不好意思，当前时间不允许发布内容！');
 
 
 switch ($ts) {
@@ -28,12 +34,18 @@ switch ($ts) {
 				'userid' => $userid,
 				'groupid' => $groupid 
 		) );
-		
+
+
+
+		//小组信息
 		$strGroup = $new ['group']->find ( 'group', array (
-				'groupid' => $groupid 
-		) );
-		$strGroup ['groupname'] = stripslashes ( $strGroup ['groupname'] );
-		
+            'groupid' => $groupid
+		));
+		$strGroup ['groupname'] = tsTitle( $strGroup ['groupname'] );
+		$strGroup ['groupdesc'] = tsTitle( $strGroup ['groupdesc'] );
+
+
+
 		if ($strGroup ['isaudit'] == 1) {
 			tsNotice ( '小组还未审核通过，不允许发帖！' );
 		}
@@ -50,6 +62,16 @@ switch ($ts) {
 		$arrGroupType = $new ['group']->findAll ( 'group_topic_type', array (
 				'groupid' => $strGroup ['groupid'] 
 		) );
+
+
+
+		#加载草稿箱
+        $strDraft = $new['group']->find('draft',array(
+            'userid'=>$userid,
+            'types'=>'topic',
+        ));
+
+
 		
 		$title = '发布帖子';
 		// 包含模版
@@ -73,13 +95,16 @@ switch ($ts) {
 		$title = trim( $_POST ['title'] );
 		
 		$content =  tsClean( $_POST ['content'] );
+		$content2 =  emptyText($_POST ['content']);
 
 		$typeid = intval ( $_POST ['typeid'] );
 		$tag = $_POST ['tag'];
-		
+
+		$score = intval($_POST ['score']);#积分
+
 		// 判断一下Title是否重复
 		$isTitle = $new ['group']->findCount ( 'group_topic', array (
-				'title' => $title 
+		    'title' => $title
 		) );
 		
 		if ($isTitle > 0) {
@@ -110,10 +135,20 @@ switch ($ts) {
 		} else {
 			$isaudit = 0;
 		}
+
+		#应用后台设置发帖是否需要审核，只针对普通用户
+		if($TS_APP['topicisaudit']==1 && $TS_USER['isadmin']==0){
+			$isaudit = 1;
+		}
+
 		
-		if ($title == '' || $content == '') {
+		if ($title == '' || $content2 == '') {
 			tsNotice ( '没有任何内容是不允许你通过滴^_^' );
 		}
+
+		if($score<0){
+            tsNotice ( '积分填写有误！' );
+        }
 		
 		/**
 		 * ******************
@@ -148,20 +183,32 @@ switch ($ts) {
 		/**
 		 * *****************
 		 */
+
+        $gaiyao = cututf8(t(tsDecode($content)),0,100);
+
 		
 		$topicid = $new ['group']->create ( 'group_topic', array (
-				'groupid' => $groupid,
-				'typeid' => $typeid,
-				'userid' => $userid,
-				'locationid'=>aac('user')->getLocationId($userid),
-				'title' => $title,
-				'content' => $content,
-				'iscomment' => $iscomment,
-				'iscommentshow' => $iscommentshow,
-				'isaudit' => $isaudit,
-				'addtime' => time (),
-				'uptime' => time () 
+			'groupid' => $groupid,
+			'typeid' => $typeid,
+			'userid' => $userid,
+			'title' => $title,
+			'content' => $content,
+			'gaiyao'=>$gaiyao,
+			'score'=>$score,
+			'iscomment' => $iscomment,
+			'iscommentshow' => $iscommentshow,
+			'isaudit' => $isaudit,
+			'addtime' => time (),
+			'uptime' => time () 
 		) );
+
+
+		#清空草稿箱
+        $new['group']->delete('draft',array(
+            'userid'=>$userid,
+            'types'=>'topic',
+        ));
+
 		
 		// 统计用户发帖数
 		$countUserTopic = $new ['group']->findCount ( 'group_topic', array (

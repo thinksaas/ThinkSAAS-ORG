@@ -10,7 +10,7 @@ $arrGroupCate = $new['group']->findAll('group_cate',array(
 
 
 // 所有小组
-$page = isset ( $_GET ['page'] ) ? intval ( $_GET ['page'] ) : '1';
+$page = tsIntval($_GET['page'],1);
 $lstart = $page * 32 - 32;
 $url = tsUrl ( 'group', 'index', array ('page' => '') );
 $arr = array(
@@ -33,7 +33,7 @@ $arrGroup = $new ['group']->findAll ( 'group', $arr, 'isrecommend desc,addtime a
 
 foreach ( $arrGroup as $key => $item ) {
 	$arrGroup [$key] ['groupname'] = tsTitle ( $item['groupname'] );
-	$arrGroup [$key] ['groupdesc'] = cututf8 ( t(tsDecode($item ['groupdesc'])), 0, 35 );
+	$arrGroup [$key] ['groupdesc'] = cututf8 (tsTitle($item ['groupdesc']), 0, 35 );
 }
 
 $groupNum = $new ['group']->findCount ( 'group',$arr);

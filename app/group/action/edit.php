@@ -5,7 +5,7 @@ defined('IN_TS') or die('Access Denied.');
 //用户是否登录
 $userid = aac('user')->isLogin();
 
-$groupid = intval($_GET['groupid']);
+$groupid = tsIntval($_GET['groupid']);
 
 $strGroup = $new['group']->find('group',array(
 	'groupid'=>$groupid,
@@ -15,14 +15,14 @@ if($strGroup['userid']!=$userid && $TS_USER['isadmin']==0){
     tsNotice('非法操作！');
 }
 
+$strGroup['groupname'] = tsDecode($strGroup['groupname']);
+$strGroup['groupdesc'] = tsDecode($strGroup['groupdesc']);
+
 switch($ts){
 
     //编辑小组基本信息
     case "base":
 
-
-        $strGroup['groupname'] = tsDecode($strGroup['groupname']);
-        $strGroup['groupdesc'] = tsDecode($strGroup['groupdesc']);
 
         //小组标签
         $arrTags = aac ( 'tag' )->getObjTagByObjid ( 'group', 'groupid', $groupid );
@@ -109,6 +109,7 @@ switch($ts){
             ));
 
             tsDimg($arrUpload['url'],'group','200','200',$arrUpload['path']);
+            tsXimg($arrUpload['url'],'group','200','200',$arrUpload['path'],1);
 
             tsNotice("小组图标修改成功！");
 
@@ -233,7 +234,7 @@ switch($ts){
             'groupid'=>$groupid,
         ));
         foreach($arrUserId as $key=>$item){
-            $arrUser[] = aac('user')->getOneUser($item['userid']);
+            $arrUser[] = aac('user')->getSimpleUser($item['userid']);
         }
 
         $title = '成员申请加入审核';
@@ -515,7 +516,7 @@ switch($ts){
 
         if(is_array($groupUser)){
             foreach($groupUser as $key=>$item){
-                $arrGroupUser[$key] = aac('user')->getOneUser($item['userid']);
+                $arrGroupUser[$key] = aac('user')->getSimpleUser($item['userid']);
                 $arrGroupUser[$key]['endtime'] = $item['endtime'];
                 $arrGroupUser[$key]['price'] = $item['price'];
             }

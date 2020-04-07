@@ -3,36 +3,19 @@
  * PHP 富文本XSS过滤类
  *
  * @package XssHtml
- * @version 1.0.0 
+ * @version 1.0.1
  * @link http://phith0n.github.io/XssHtml
  * @since 20140621
  * @copyright (c) Phithon All Rights Reserved
  *
+ *【2019-02-15由ThinkSAAS继续完善修正部分问题】
  */
-#
-# Written by Phithon <root@leavesongs.com> in 2014 and placed in
-# the public domain.
-#
-# phithon <root@leavesongs.com> 编写于20140621
-# From: XDSEC <www.xdsec.org> & 离别歌 <www.leavesongs.com>
-# Usage: 
-# <?php
-# require('xsshtml.class.php');
-# $html = '<html code>';
-# $xss = new XssHtml($html);
-# $html = $xss->getHtml();
-# ?\>
-# 
-# 需求：
-# PHP Version > 5.0
-# 更多使用选项见 http://phith0n.github.io/XssHtml
-
 class XssHtml {
 	private $m_dom;
 	private $m_xss;
 	private $m_ok;
 	private $m_AllowAttr = array('title', 'src', 'href', 'id', 'class', 'style', 'width', 'height', 'alt', 'target', 'align','type','pluginspage','wmode','play','loop','menu','allowscriptaccess','allowfullscreen','frameborder','preload','data-setup','tabindex','aria-live','aria-label','aria-hidden','aria-haspopup','role','controls');
-	private $m_AllowTag = array('a', 'img', 'br', 'strong', 'b', 'code', 'pre', 'p', 'div', 'em', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'table', 'ul', 'ol', 'tr', 'th', 'td', 'hr', 'li', 'u','embed','video','audio','source');
+	private $m_AllowTag = array('a', 'img', 'br', 'strong', 'b', 'code', 'pre', 'p', 'div', 'em', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'table', 'ul', 'ol', 'tr', 'th', 'td', 'hr', 'li', 'u','video','audio','source','blockquote','iframe','embed');
 
 	/**
      * 构造函数
@@ -77,11 +60,21 @@ class XssHtml {
 	}
 
 	private function __true_url($url){
+	    /*
 		if (preg_match('#^https?://.+#is', $url)) {
 			return $url;
 		}else{
 			return 'http://' . $url;
 		}
+	    */
+        $href = $url;
+        if (substr($href,0, 7) == "http://" || substr($href,0, 8) == "https://" || substr($href,0, 7) == "mailto:" || substr($href,0, 4) == "tel:" || substr($href,0, 1) == "#" || substr($href,0, 1) == "/") {
+
+            return $href;
+        }else{
+            return '';
+        }
+
 	}
 
 	private function __get_style($node){
@@ -99,17 +92,22 @@ class XssHtml {
 	private function __get_link($node, $att){
 		$link = $node->attributes->getNamedItem($att);
 		if ($link) {
-			//return $this->__true_url($link->nodeValue);
-			return $link->nodeValue;
+			return $this->__true_url($link->nodeValue);
+			//return $link->nodeValue;
 		}else{
 			return '';
 		}
 	}
 
 	private function __setAttr($dom, $attr, $val){
+	    /*
 		if (!empty($val)) {
 			$dom->setAttribute($attr, $val);
 		}
+	    */
+		if(($attr=='href' && $val=='') || ($attr && $val)){
+            $dom->setAttribute($attr, $val);
+        }
 	}
 
 	private function __set_default_attr($node, $attr, $default = '')
@@ -155,14 +153,21 @@ class XssHtml {
 	private function __node_a($node){
 		$this->__common_attr($node);
 		$href = $this->__get_link($node, 'href');
-
 		$this->__setAttr($node, 'href', $href);
 		$this->__set_default_attr($node, 'target', '_blank');
 	}
 
 	private function __node_embed($node){
 		$this->__common_attr($node);
-		$link = $this->__get_link($node, 'src');
+		$link = strtolower($this->__get_link($node, 'src'));
+
+
+        $arrType = explode('.',$link);
+        $type = end($arrType);
+
+        if(!in_array($type,array('swf','mp4','mp3'))) {
+            tsNotice('不支持的embed链接类型！');
+        }
 
 		$this->__setAttr($node, 'src', $link);
 		$this->__setAttr($node, 'allowscriptaccess', 'never');
@@ -170,9 +175,23 @@ class XssHtml {
 		$this->__set_default_attr($node, 'height');
 	}
 
+    private function __node_iframe($node){
+        $this->__common_attr($node);
+        $link = strtolower($this->__get_link($node, 'src'));
+
+        $url = str_replace('//','',$link);
+
+        $arrUrl = explode('/',$url);
+
+        if(!in_array($arrUrl[0],array('v.qq.com','player.youku.com','player.bilibili.com'))) {
+            tsNotice('不支持的第三方视频！');
+        }
+
+        $this->__setAttr($node, 'src', $link);
+    }
+
 	private function __node_default($node){
 		$this->__common_attr($node);
 	}
 }
-
 ?>

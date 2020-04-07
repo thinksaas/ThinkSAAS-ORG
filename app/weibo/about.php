@@ -1,12 +1,12 @@
 <?php
 defined('IN_TS') or die('Access Denied.');
 return array (
-    'name' => '唠叨',
+    'name' => 'Weibo',
     'version' => '1.2',
-    'desc' => '唠叨，微博，一句话',
+    'desc' => 'Weibo',
     'url' => 'http://www.thinksaas.cn',
     'email' => 'thinksaas@qq.com',
-    'author' => '邱君',
+    'author' => 'Qiu Jun',
     'author_url' => 'http://www.thinksaas.cn',
     'isoption' => '1',
     'isinstall' => '1',

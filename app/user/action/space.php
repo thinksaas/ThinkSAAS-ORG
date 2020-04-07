@@ -17,14 +17,13 @@ if(is_array($arrGroupUser)){
 
 
 //留言
-$arrGuests = $new['user']->findAll('user_gb',array(
+$arrGuest = $new['user']->findAll('user_gb',array(
 	'touserid'=>$strUser['userid'],
 ),'addtime desc',null,10);
 
-foreach($arrGuests as $key=>$item){
-	$arrGuest[] = $item;
+foreach($arrGuest as $key=>$item){
 	$arrGuest[$key]['content'] = tsDecode($item['content']);
-	$arrGuest[$key]['user']=$new['user']->getOneUser($item['userid']);
+	$arrGuest[$key]['user']=$new['user']->getSimpleUser($item['userid']);
 }
 
 $title = $strUser['username'];

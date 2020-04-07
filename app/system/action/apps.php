@@ -5,12 +5,31 @@ defined('IN_TS') or die('Access Denied.');
 switch($ts){
 	//app列表
 	case "list":
+
+        $arrAppNav = $GLOBALS['TS_SITE']['appnav'];
+
 		$applists	= tsScanDir('app');
 		foreach($applists as $key=>$item){
 			if(is_file('app/'.$item.'/about.php')){
-				$arrApps[$key]['name'] = $item;
+
+                $arrApps[$key]['name'] = $item;
+
 				$arrApps[$key]['about'] = require_once 'app/'.$item.'/about.php';
+
+                if($arrAppNav[$item]){
+                    $arrApps[$key]['about']['name'] = $arrAppNav[$item];
+                }
+
+                if(is_file('app/'.$item.'/icon.png')){
+                    $arrApps[$key]['icon'] = SITE_URL.'app/'.$item.'/icon.png';
+                }else{
+                    $arrApps[$key]['icon'] = SITE_URL.'public/images/app.png';
+                }
+
 			}
+
+
+
 		}
 
 		foreach($arrApps as $item){

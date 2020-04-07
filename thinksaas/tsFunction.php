@@ -7,24 +7,19 @@ defined('IN_TS') or die('Access Denied.');
  * @Email:thinksaas@qq.com
  * @TIME:2010-12-18
  */
-
+use Intervention\Image\ImageManagerStatic as Image;
 /**
  * 加载某一APP类
  * AutoAppClass
  * @app APP名称
- * @
+ * 
  * @param $app
  * @return bool
  */
 function aac($app) {
-
-	$path = THINKAPP . '/' . $app . '/';
-	if (!class_exists($app)) {
-		require_once $path . 'class.' . $app . '.php';
-	}
-	if (!class_exists($app)) {
-		return false;
-	}
+	spl_autoload_register(function ($app) {
+		require_once 'app/'.$app.'/'.'class.'.$app.'.php';
+	});
 	$obj = new $app($GLOBALS['db']);
 	return $obj;
 }
@@ -36,7 +31,7 @@ function aac($app) {
  * @param string $type
  * @return multitype:unknown
  */
-function array_sort($arr, $keys, $type = 'asc') {
+function array2sort($arr, $keys, $type = 'asc') {
 	$keysvalue = $new_array = array();
 	foreach ($arr as $k => $v) {
 		$keysvalue[$k] = $v[$keys];
@@ -62,7 +57,7 @@ function array_sort($arr, $keys, $type = 'asc') {
  */
 function tsNotice($notice, $button = '点击返回', $url = 'javascript:history.back(-1);', $isAutoGo = false) {
 	global $runTime;
-	$title = '提示：';
+	$title = 'Tips：';
 	include  pubTemplate('notice');
 	exit();
 }
@@ -241,11 +236,11 @@ function getIp() {
  */
 function t($text) {
 	$text = tsDecode($text);
-	$text = @preg_replace('/\[.*?\]/is', '', $text);
+	$text = preg_replace('/\[.*?\]/is', '', $text);
 	$text = cleanJs($text);
 	// 彻底过滤空格BY QINIAO
-	$text = @preg_replace('/\s(?=\s)/', '', $text);
-	$text = @preg_replace('/[\n\r\t]/', ' ', $text);
+	$text = preg_replace('/\s(?=\s)/', '', $text);
+	$text = preg_replace('/[\n\r\t]/', ' ', $text);
 	$text = str_replace('  ', ' ', $text);
 	// $text = str_replace ( ' ', '', $text );
 	$text = str_replace('&nbsp;', '', $text);
@@ -558,7 +553,7 @@ function pubTemplate($file) {
  */
 function addAction($hook, $actionFunc) {
 	global $tsHooks;
-	if (!@in_array($actionFunc, $tsHooks[$hook])) {
+	if (!in_array($actionFunc, $tsHooks[$hook])) {
 		$tsHooks[$hook][] = $actionFunc;
 	}
 
@@ -648,40 +643,98 @@ function md10($str = '') {
  * @param string $c	1裁切,0不裁切
  * @return void|string
  */
-function tsXimg($file, $app, $w, $h, $path = '', $c = '0') {
+/**
+ * Undocumented function
+ *
+ * @param [type] $file		数据库里的图片url
+ * @param [type] $app 		app名称
+ * @param [type] $w 		缩略图片宽度
+ * @param [type] $h 		缩略图片高度
+ * @param string $path
+ * @param string $c 		1裁切,0不裁切
+ * @param string $sy 		水印图片
+ * @param string $position	水印位置
+ * @param integer $x		水印X轴
+ * @param integer $y		水印Y轴
+ * @return void
+ */
+function tsXimg($file, $app, $w, $h, $path = '', $c = '0',$sy='sy.png',$position='bottom-left',$x=10,$y=10) {
 
-	if (!$file) {
-		return false;
-	} else {
+    if (!$file) {
+        return false;
+    } else {
 
-		//$info = explode ( '.', $file );
-		//$name = md10 ( $file ) . '_' . $w . '_' . $h . '.' . $info [1];
+        $arrInfo = explode('/', $file);
+        $name = end($arrInfo);
 
-		$info = explode('/', $file);
-		$name = $info[2];
+        $arrType = explode('.',$name);
+        $type = end($arrType);
+        
 
-		if ($path == '') {
-			$cpath = 'cache/' . $app . '/' . $w . '/' . $name;
-		} else {
-			$cpath = 'cache/' . $app . '/' . $path . '/' . $w . '/' . $name;
-		}
+        if($type!='gif'){
+            $cpath = 'cache/' . $app . '/' . $path . '/' . md5($w . $h . $app . $name) . '.jpg';
+        }else{
+            $cpath = 'uploadfile/'.$app.'/'.$file;
+        }
 
-		if (!is_file($cpath)) {
-			createFolders('cache/' . $app . '/' . $path . '/' . $w);
-			$dest = 'uploadfile/' . $app . '/' . $file;
-			$arrImg = getimagesize($dest);
-			if ($arrImg[0] <= $w) {
-				copy($dest, $cpath);
 
-			} else {
-				require_once 'thinksaas/tsImage.php';
-				$resizeimage = new tsImage("$dest", $w, $h, $c, "$cpath");
-			}
-		}
+        if (!is_file($cpath) && $type!='gif') {
 
-		return SITE_URL . $cpath;
+            Image::configure(array('driver' => 'gd'));//gd or imagick
 
-	}
+            createFolders('cache/' . $app . '/' . $path);
+            $dest = 'uploadfile/' . $app . '/' . $file;
+            $arrImg = getimagesize($dest);
+
+            try{
+                $img = Image::make($dest);
+            }catch (Exception $e){
+                //$e->getMessage();
+                return SITE_URL . 'public/images/nopic.jpg';
+                exit();
+            }
+
+            if ($arrImg[0] <= $w) {
+
+                if($c){
+                    if($w && $h){
+                        $img->fit($w, $h);
+                    }elseif($w && $h==''){
+                        $img->resize($w, null, function ($constraint) {
+                            $constraint->aspectRatio();
+                        });
+                    }
+                }
+
+            } else {
+
+                if($w && $h){
+                    $img->fit($w, $h);
+                }elseif($w && $h==''){
+                    $img->resize($w, null, function ($constraint) {
+                        $constraint->aspectRatio();
+                    });
+                }
+
+            }
+
+
+            if($arrImg[0]>320 && $w>320 && in_array($type,array('jpg','jpeg','png'))){
+				#图片大于320px加水印
+				//echo $sy;exit;
+                $watermark = Image::make('public/images/'.$sy);
+                $img->insert($watermark, $position,$x,$y);
+            }
+
+
+            $img->save($cpath);
+
+        }
+
+        return SITE_URL . $cpath;
+
+    }
+
 }
 
 /**
@@ -698,7 +751,10 @@ function tsDimg($file, $app, $w, $h, $path) {
 	$info = explode('/', $file);
 	$name = $info[2];
 
-	unlink('cache/' . $app . '/' . $path . '/' . $w . '/' . $name);
+    $cpath = 'cache/' . $app . '/' . $path . '/' . md5($w . $h . $app . $name) . '.jpg';
+
+	unlink($cpath);
+
 	return true;
 }
 
@@ -902,6 +958,23 @@ function tsUrl($app, $ac = '', $params = array()) {
  */
 function reurl() {
 	global $tsMySqlCache;
+
+	$arrSuffix = array(
+		'?from=message',
+	    '?from=singlemessage',
+	    '?from=singlemessage&from=singlemessage',
+        '?from=groupmessage',
+        '?from=timeline',
+        '?tdsourcetag=s_pctim_aiomsg',
+        '?_wv=1031',
+        '?tdsourcetag=s_pcqq_aiomsg',
+        '?from=groupmessage&isappinstalled=0',
+        '?from=groupmessage&isappinstalled=1',
+        '?from=singlemessage&isappinstalled=0',
+        '?from=singlemessage&isappinstalled=1',
+    );
+
+
 	$options = fileRead('data/system_options.php');
 
 	if ($options == '') {
@@ -966,7 +1039,7 @@ function reurl() {
 				foreach ($params as $p => $v) {
 					switch ($p) {
 						case 0 :
-                            if($v=='?from=singlemessage' || $v=='?from=groupmessage' || $v=='?from=timeline') $v='home';
+                            if(in_array($v,$arrSuffix)) $v='home';
 							$_GET['app'] = $v;
 							break;
 						case 1 :
@@ -1079,14 +1152,15 @@ function reurl() {
 			} elseif ($options['site_urltype'] == 7) {
 				// http://localhost/group/topic/1/
 				$params = explode('/', $params);
-				//var_dump($params);
+				//var_dump($params);exit;
 				foreach ($params as $p => $v) {
 					switch ($p) {
 						case 0 :
-                            if($v=='?from=singlemessage' || $v=='?from=groupmessage' || $v=='?from=timeline') $v='home';
+                            if(in_array($v,$arrSuffix)) $v='home';
 							$_GET['app'] = $v;
 							break;
 						case 1 :
+                            if(in_array($v,$arrSuffix)) $v='index';
 							$_GET['ac'] = $v;
 							if (empty($_GET['ac']))
 								$_GET['ac'] = 'index';
@@ -1327,39 +1401,46 @@ function delDirFile($dir) {
 function tsUpload($files, $projectid, $dir, $uptypes) {
 	
 	if ($files['size'] > 0) {
-	
-	
+
+        $upload_max_filesize = ini_get('upload_max_filesize')*1048576;
+
+        if($upload_max_filesize<$files['size']){
+            getJson('PHP允许上传文件的最大尺寸为'.ini_get('upload_max_filesize'),1);
+        }
+
+        $arrType = explode('.', strtolower($files['name']));
+        $type = end($arrType);
+
 		//上传图片大小控制
-		if(in_array('png',$uptypes) || in_array('jpg',$uptypes) || in_array('gif',$uptypes) || in_array('jpeg',$uptypes)){
-		
-			if($GLOBALS['TS_SITE']['photo_size']){
-				$upsize = $GLOBALS['TS_SITE']['photo_size']*1048576;
-				
-				if($files ['size']>$upsize){
-					tsNotice('上传图片不能超过'.$GLOBALS['TS_SITE']['photo_size'].'M，请修改小点后再上传！');
-				}
-				
-			}
-		
-		}
-		
+		if(in_array($type,array('jpg','jpeg','png','gif'))) {
 
-		$menu2 = intval($projectid / 1000);
+            $type = getImagetype($files['tmp_name']);
 
-		$menu1 = intval($menu2 / 1000);
+            if (!in_array($type, $uptypes)) {
+                getJson('图片错误!',1);
+            }
 
-		$path = $menu1 . '/' . $menu2;
+            if ($GLOBALS['TS_SITE']['photo_size']) {
+                $upsize = $GLOBALS['TS_SITE']['photo_size'] * 1048576;
 
-		$dest_dir = 'uploadfile/' . $dir . '/' . $path;
+                if ($files ['size'] > $upsize) {
+                    //tsNotice('上传图片不能超过' . $GLOBALS['TS_SITE']['photo_size'] . 'M，请修改小点后再上传！');
 
-		createFolders($dest_dir);
+                    $img = Image::make($files['tmp_name']);
+
+                }
+
+            }
+
+        }else{
+
+        }
+
+        $path = getDirPath($projectid);
+        $dest_dir = 'uploadfile/' . $dir . '/' . $path;
+        createFolders($dest_dir);
 
 		//$ext = pathinfo($files['name'],PATHINFO_EXTENSION);
-
-		$arrType = explode('.', strtolower($files['name']));
-		// 转小写一下
-
-		$type = array_pop($arrType);
 
 		if (in_array($type, $uptypes)) {
 
@@ -1370,13 +1451,37 @@ function tsUpload($files, $projectid, $dir, $uptypes) {
 			// 先删除
 			unlink($dest);
 			// 后上传
-			move_uploaded_file($files['tmp_name'], mb_convert_encoding($dest, "gb2312", "UTF-8"));
+            if($img){
+                //处理大图统一为800宽度，高度自适应
+                $img->resize(800, null, function ($constraint) {
+                    $constraint->aspectRatio();
+                });
+                $img->save($dest);
+            }else{
+                move_uploaded_file($files['tmp_name'], mb_convert_encoding($dest, "gb2312", "UTF-8"));
+            }
 
 			chmod($dest, 0777);
 
 			$filesize = filesize($dest);
 			if (intval($filesize) > 0) {
+
+                #继续验证图片
+                if(in_array($type,array('jpg','jpeg','png','gif'))) {
+
+                    try{
+                        Image::make($dest);
+                    }catch (Exception $e){
+                        //echo 'Message: ' .$e->getMessage();
+                        unlink($dest);
+                        return false;
+                        exit();
+                    }
+
+                }
+
 				return array('name' => tsFilter($files['name']), 'path' => $path, 'url' => $path . '/' . $name, 'type' => $type, 'size' => tsFilter($files['size']));
+
 			} else {
 				return false;
 			}
@@ -1631,10 +1736,22 @@ function cleanJs($text) {
  * @param unknown $text
  * @return mixed
  */
-function tsClean($text) {
+function tsClean($text,$js=0) {
 	$text = stripslashes(trim($text));
 	//去除前后空格，并去除反斜杠
 	//$text = br2nl($text); //将br转换成/n
+
+    //处理正文图片
+    preg_match_all('/<img[^>]*src="([^"]*)"[^>]*>/i',$text, $matchs);   //主要
+    $arrImage = $matchs[1];
+    foreach($arrImage as $key=>$item){
+        if(substr( $item, 0, 1 )=='/'){
+            $item = substr($item,1);
+        }
+        if(getimagesize($item)==false){
+            getJson('内容中存在非法图片：'.$item,$js,0);
+        }
+    }
 
 	///////XSS start
 	require_once 'thinksaas/xsshtml.class.php';
@@ -1851,7 +1968,7 @@ function tsUrlCheck($parameter) {
                 exit;
             }
         }
-        return $parameter;
+        return strtolower($parameter);//转小写
     }
 
 }
@@ -1877,38 +1994,6 @@ function ludou_width_height($content) {
 		}
 	}
 	return $content;
-}
-
-/**
- * DZ在线中文分词
- * @param $title string 进行分词的标题
- * @param $content string 进行分词的内容
- * @param $encode string API返回的数据编码
- * @return  array 得到的关键词数组
- */
-function dz_segment($title = '', $content = '', $encode = 'utf-8') {
-	if ($title == '') {
-		return false;
-	}
-	$title = rawurlencode(strip_tags($title));
-	$content = strip_tags($content);
-	if (strlen($content) > 2400) {//在线分词服务有长度限制
-		$content = mb_substr($content, 0, 800, $encode);
-	}
-	$content = rawurlencode($content);
-	$url = 'http://keyword.discuz.com/related_kw.html?title=' . $title . '&content=' . $content . '&ics=' . $encode . '&ocs=' . $encode;
-	$xml_array = simplexml_load_file($url);
-	//将XML中的数据,读取到数组对象中
-	$result = $xml_array -> keyword -> result;
-	$data = array();
-	foreach ($result->item as $key => $value) {
-		array_push($data, (string)$value -> kw);
-	}
-	if (count($data) > 0) {
-		return $data;
-	} else {
-		return false;
-	}
 }
 
 /**
@@ -1951,6 +2036,17 @@ function isMobile() {
 		}
 	}
 	return false;
+}
+
+/**
+ * 判断是否微信浏览器访问
+ */
+function isWeixin(){ 
+    if ( strpos($_SERVER['HTTP_USER_AGENT'], 'MicroMessenger') !== false ) {
+        return true;
+    }else{
+		return false;
+	} 
 }
 
 /**
@@ -2106,39 +2202,6 @@ function array2string($data, $isformdata = 1) {
 		$data = ($data); //new_stripslashes ( $data );
 	}
 	return serialize ( $data );
-}
-
-/**
- * 浏览器友好的变量输出
- * @param mixed $var 变量
- * @param boolean $echo 是否输出 默认为True 如果为false 则返回输出字符串
- * @param string $label 标签 默认为空
- * @param boolean $strict 是否严谨 默认为true
- * @return void|string
- */
-function dump($var, $echo = true, $label = null, $strict = true) {
-	$label = ($label === null) ? '' : rtrim ( $label ) . ' ';
-	if (! $strict) {
-		if (ini_get ( 'html_errors' )) {
-			$output = print_r ( $var, true );
-			$output = '<pre>' . $label . htmlspecialchars ( $output, ENT_QUOTES ) . '</pre>';
-		} else {
-			$output = $label . print_r ( $var, true );
-		}
-	} else {
-		ob_start ();
-		var_dump ( $var );
-		$output = ob_get_clean ();
-		if (! extension_loaded ( 'xdebug' )) {
-			$output = preg_replace ( '/\]\=\>\n(\s+)/m', '] => ', $output );
-			$output = '<pre>' . $label . htmlspecialchars ( $output, ENT_QUOTES ) . '</pre>';
-		}
-	}
-	if ($echo) {
-		echo ($output);
-		return null;
-	} else
-		return $output;
 }
 
 
@@ -2307,6 +2370,22 @@ function cleanContentImgWH($content){
 }
 
 
+/**
+ * 将正文转换成手机端支持的html正文
+ *
+ * @param [type] $html
+ * @return void
+ */
+function mobileHtml($html){
+	$html = strip_tags($html,'<div><p><img><br>');
+	$html = preg_replace( '/(<div.*?)(style=.+?[\'|"])|((width)=[\'"]+[0-9]+[\'"]+)|((height)=[\'"]+[0-9]+[\'"]+)/i', '$1' , $html);
+	$html = preg_replace( '/(<p.*?)(style=.+?[\'|"])|((width)=[\'"]+[0-9]+[\'"]+)|((height)=[\'"]+[0-9]+[\'"]+)/i', '$1' , $html);
+	$html = preg_replace( '/(<img.*?)(style=.+?[\'|"])|((width)=[\'"]+[0-9]+[\'"]+)|((height)=[\'"]+[0-9]+[\'"]+)/i', '$1' , $html);
+	$html = str_replace('<img ','<img style="max-width:100%;height:auto" ',$html);
+	return $html;
+}
+
+
 //获取正文图片
 function getTextPhotos($text,$num=0){
     $pattern="/<[img|IMG].*?src=[\'|\"](.*?(?:[\.gif|\.jpg|\.png]))[\'|\"].*?[\/]?>/";
@@ -2396,3 +2475,193 @@ function getArrTimezone(){
         'Pacific/Fiji' => '(GMT +12:00) Fiji, Kamchatka, Marshall Is.',
     );
 }
+
+
+/**
+ * 判断图片上传格式是否为图片 return返回文件后缀
+ */
+function getImagetype($filename){
+    $file = fopen($filename, 'rb');
+    $bin  = fread($file, 2); //只读2字节
+    fclose($file);
+    $strInfo  = unpack('C2chars', $bin);
+    $typeCode = intval($strInfo['chars1'].$strInfo['chars2']);
+    // dd($typeCode);
+    $fileType = '';
+    switch ($typeCode) {
+        case 255216:
+            $fileType = 'jpg';
+            break;
+        case 7173:
+            $fileType = 'gif';
+            break;
+        case 6677:
+            $fileType = 'bmp';
+            break;
+        case 13780:
+            $fileType = 'png';
+            break;
+        default:
+            $fileType = '只能上传图片类型格式';
+    }
+    // if ($strInfo['chars1']=='-1' AND $strInfo['chars2']=='-40' ) return 'jpg';
+    // if ($strInfo['chars1']=='-119' AND $strInfo['chars2']=='80' ) return 'png';
+    return $fileType;
+}
+
+/**
+ * 根据ID获取目录形式。例如 0/0
+ */
+function getDirPath($projectid){
+    $menu2 = intval($projectid / 1000);
+    $menu1 = intval($menu2 / 1000);
+    $path = $menu1 . '/' . $menu2;
+    return $path;
+}
+
+/**
+ * 等比计算
+ */
+function dengBi($width,$height,$maxX=1280,$maxY=1280){
+    //计算缩放比例
+    $scale = ($maxX/$width)>($maxY/$height)?$maxY/$height:$maxX/$width;
+    //计算缩放后的尺寸
+    $sWidth = floor($width*$scale);
+    $sHeight = floor($height*$scale);
+
+    return array(
+        'w'=>$sWidth,
+        'h'=>$sHeight,
+    );
+}
+
+/**
+ * 编辑器存在有html标签的空内容
+ */
+function emptyText($text=''){
+    $text = trim($text);
+    $text = str_replace('<p>','',$text);
+    $text = str_replace('<br>','',$text);
+    $text = str_replace('</p>','',$text);
+    $text = trim($text);
+    return $text;
+}
+
+
+/**
+ * 更新app导航和我的导航
+ * @param $appkey
+ * @param $appname
+ */
+function upAppNav($appkey,$appname){
+    if($appkey && $appname){
+
+        $strAbout = require_once 'app/'.$appkey.'/about.php';
+
+        if($strAbout['isappnav']==1){
+            #更新APP导航名称
+            $arrNav = include 'data/system_appnav.php';
+            if(is_array($arrNav)){
+                $arrNav[$appkey] = $appname;
+            }else{
+                $arrNav = array(
+                    $appkey=>$appname,
+                );
+            }
+            fileWrite('system_appnav.php','data',$arrNav);
+            $GLOBALS['tsMySqlCache']->set('system_appnav',$arrNav);
+        }
+
+        if($strAbout['ismy']==1){
+            #更新我的社区导航
+            $arrMy = include 'data/system_mynav.php';
+            if(is_array($arrMy)){
+                $arrMy[$appkey] = $appname;
+            }else{
+                $arrMy = array(
+                    $appkey=>$appname,
+                );
+            }
+            fileWrite('system_mynav.php','data',$arrMy);
+            $GLOBALS['tsMySqlCache']->set('system_mynav',$arrMy);
+        }
+
+    }
+}
+
+/**
+ * 更新app配置选项
+ * @param $app
+ * @param array $option
+ */
+function upAppOptions($app,array $option){
+    fileWrite($app.'_options.php','data',$option);
+    $GLOBALS['tsMySqlCache']->set($app.'_options',$option);
+}
+
+/**
+ * 获取app配置选项
+ * @param $app
+ * @return mixed
+ */
+function getAppOptions($app){
+    $strOption = fileRead($app.'_options.php');
+    if($strOption==''){
+        $strOption = $GLOBALS['tsMySqlCache']->get($app.'_options');
+    }
+    return $strOption;
+}
+
+/**
+ * 获取
+ *
+ * @param [type] $ptable
+ * @param [type] $pid
+ * @return void
+ */
+function getProjectUrl($ptable,$pid){
+	$arrProjectUrl = array(
+		'group_topic'=>tsUrl('group','topic',array('id'=>$pid)),//帖子
+		'article'=>tsUrl('article','show',array('id'=>$pid)),//文章
+		'photo'=>tsUrl('photo','show',array('id'=>$pid)),//图片
+		'weibo'=>tsUrl('weibo','show',array('id'=>$pid)),//唠叨
+		'video'=>tsUrl('video','show',array('id'=>$pid)),//视频
+		'audio'=>tsUrl('audio','show',array('id'=>$pid)),//音频
+		'event'=>tsUrl('event','show',array('id'=>$pid)),//活动
+		'vote'=>tsUrl('vote','show',array('id'=>$pid)),//投票
+		'study_lesson'=>tsUrl('study','lesson',array('id'=>$pid)),//课时
+		'shop_goods'=>tsUrl('shop','goods',array('id'=>$pid)),//商品
+	);
+	return $arrProjectUrl[$ptable];
+}
+
+/**
+ * 取0以上的整数，GET数字变量专用
+ *
+ * @param [type] $number
+ * @param integer $min
+ * @return void
+ */
+function tsIntval($number,$min=0){
+	#判断是否空变量
+	if(empty($number)==true){
+		$number = 0;
+	}
+	#判断是否为数字，或者判断数字中是否有小数点
+	if(is_numeric($number)==false || (is_numeric($number)==true && strpos($number,".")==true)){
+		ts404();
+	}
+	#转为整型
+	$number = intval($number);
+	#如果是负整数
+	if($number<0){
+		ts404();
+	}
+	if($number==0 && $min>0){
+		$number = $min;
+	}
+	return $number;
+}
+
+
+if(is_file('thinksaas/wxFunction.php')) include 'thinksaas/wxFunction.php'; //微信内登录

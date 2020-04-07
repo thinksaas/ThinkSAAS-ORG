@@ -1,14 +1,27 @@
-//提示
+function tsAlert(content){
+    var html = '<div id="tsalert" class="alert alert-info text-center">'+content+' <span id="alert_daojishi"></span></div>';
+    $('body').append(html);
+    //倒计时
+    var step = 10;
+    var _res = setInterval(function() {
+        step-=1;
+        $('#alert_daojishi').html(step);
+        if(step <= 0){
+            $("#tsalert").detach();
+            clearInterval(_res);//清除setInterval
+        }
+    },1000);
+}
 function tsNotice(msg,title){
 
     $('#myModal').modal('hide');
 
-    var chuangkou = '<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <div class="modal-title" id="myModalLabel">提示</div> <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">关闭</span></button> </div> <div class="modal-body"> </div> <div class="modal-footer"> <button type="button" class="btn btn-primary btn-sm" data-dismiss="modal">关闭</button> </div> </div> </div> </div>';
+    var chuangkou = '<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <div class="modal-title" id="myModalLabel">Tips</div> <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button> </div> <div class="modal-body"> </div> <div class="modal-footer"> <!--<button type="button" class="btn btn-primary btn-sm" data-dismiss="modal">Close</button>--> </div> </div> </div> </div>';
 
     $('body').prepend(chuangkou);
 
 	if(title==''){
-		title = '提示';
+		title = 'Tips';
 	}	
 	$(".modal-body").html(msg);
 	$(".modal-title").html(title);
@@ -18,33 +31,36 @@ function tsNotice(msg,title){
 
 //签到
 function qianDao(){
-    if(siteUid==0){
-        tsNotice('请登录后再签到！');
-        return false;
-    }else{
-        $.post(siteUrl+'index.php?app=user&ac=signin',function(rs){
-            if(rs==1){
-                $.get(siteUrl+'index.php?app=user&ac=signin&ts=ajax',function(rs){
-                    $("#qiandao").html(rs);
-                })
-            }else{
-                tsNotice('签到失败！');
-            }
-        })
-    }
+    $.post(siteUrl+'index.php?app=user&ac=signin',function(rs){
+        if(rs==2){
+            tsNotice('请登录后再签到！');
+        }else if(rs==1){
+            $.get(siteUrl+'index.php?app=user&ac=signin&ts=ajax',function(rs){
+                $("#qiandao").html(rs);
+            })
+        }else{
+            tsNotice('签到失败！');
+        }
+    })
 }
 
 /*!刷新验证码*/
 function newgdcode(obj, url) {
     obj.src = url + "&nowtime=" + new Date().getTime()
 }
+
+function changeImageCode() {
+    var imgsrc = $("#imagecode")[0].src;
+    $("#imagecode").attr('src',imgsrc+"&nowtime=" + new Date().getTime());
+}
+
 /*!搜索点击*/
 function searchon() {
     $("#searchto").submit()
 }
 /*!用户关注*/
 function follow(userid, token) {
-    $.getJSON(siteUrl + "index.php?app=user&ac=follow&ts=do", {
+    $.post(siteUrl + "index.php?app=user&ac=follow&ts=do", {
         "userid": userid,
         "token": token
     },
@@ -61,11 +77,11 @@ function follow(userid, token) {
                 }
             }
         }
-    })
+    },'json')
 }
 /*!取消用户关注*/
 function unfollow(userid, token) {
-    $.getJSON(siteUrl + "index.php?app=user&ac=follow&ts=un", {
+    $.post(siteUrl + "index.php?app=user&ac=follow&ts=un", {
         "userid": userid,
         "token": token
     },
@@ -78,7 +94,7 @@ function unfollow(userid, token) {
                 window.location.reload()
             }
         }
-    })
+    },'json')
 }
 
 
@@ -115,7 +131,7 @@ function tsPost(url,datas){
 }
 
 jQuery(document).ready(function(){
-    $('#comm-form').live('submit', function() {
+    $('#comm-form').on('submit', function() {
         //alert(event.type);
         $('button[type="submit"]').html('发送中...');
         $('button[type="submit"]').attr("disabled", true);
@@ -191,7 +207,7 @@ $(function(){
             return false;
         }
     })
-})
+});
 
 
 $(document).ready(function () {
@@ -204,3 +220,106 @@ $(document).ready(function () {
         }
     });
 });
+
+function sendPhoneCode(typeid){
+    var phone = $("#myphone").val();
+    var authcode = $("#authcode").val();
+    if(phone==''){
+        tsNotice('手机号码不能为空！');
+        return false;
+    }
+    if(authcode==''){
+        tsNotice('图片验证码不能为空！');
+        return false;
+    }
+    $.post(siteUrl+'index.php?app=pubs&ac=phone',{'phone':phone,'authcode':authcode,'typeid':typeid},function(rs){
+        if (rs.status == 0) {
+			tsNotice(rs.msg);
+        } else if(rs.status==1) {
+            var step = 59;
+            $('#mybtn').val('重新发送60');
+            var _res = setInterval(function()
+            {
+                $("#mybtn").attr("disabled", true);//设置disabled属性
+                $('#mybtn').html('重新发送'+step);
+                step-=1;
+                if(step <= 0){
+                    $("#mybtn").removeAttr("disabled"); //移除disabled属性
+                    $('#mybtn').html('获取验证码');
+                    clearInterval(_res);//清除setInterval
+                }
+            },1000);
+        }
+
+    },'json');
+}
+
+function NumberCheck(t){
+    var num = t.value;
+    var re=/^\d*$/;
+    if(!re.test(num)){
+        isNaN(parseInt(num))?t.value=0:t.value=parseInt(num);
+    }
+}
+
+
+function imgView () {
+    var r= new FileReader();
+    f=document.getElementById('img-file').files[0];
+
+    r.readAsDataURL(f);
+    r.onload=function (e) {
+        $("#img-view").show();
+        document.getElementById('img-show').src=this.result;
+    };
+}
+
+
+/**
+ * 打开评论回复框
+ * @param {Number} commentid 评论ID
+ */
+function commentOpen(commentid){
+    $('#rcomment_'+commentid).toggle('fast');
+}
+/**
+ * 回复评论
+ * @param {*} rid 上级评论ID
+ * @param {*} ptable 
+ * @param {*} pkey 
+ * @param {*} pid 
+ * @param {*} touid 
+ */
+function recomment(commentid,referid,ptable,pkey,pid,touid){
+    var content = $('#recontent_'+commentid).val();
+    //console.log('#recontent_'+commentid)
+    if(content==''){
+        tsNotice('回复内容不能为空！');
+    }else{
+
+        $('#recomm_btn_'+commentid).hide();
+
+        tsPost('index.php?app=pubs&ac=comment&ts=do&js=1',{
+            ptable:ptable,
+            pkey:pkey,
+            pid:pid,
+
+            referid:referid,
+            touserid:touid,
+
+            content:content
+        })
+
+    }
+}
+
+/**
+ * 加载更多评论回复
+ * @param {*} commentid 
+ * @param {*} userid //项目用户ID
+ */
+function loadRecomment(commentid,userid){
+    $.get(siteUrl+'index.php?app=pubs&ac=ajax&ts=recomment&referid='+commentid+'&userid='+userid,function (rs) {
+        $("#recomment_"+commentid).html(rs)
+    })
+}

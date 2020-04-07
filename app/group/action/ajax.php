@@ -2,6 +2,7 @@
 defined('IN_TS') or die('Access Denied.');
 
 switch($ts){
+
 	//帖子审核
 	case "topicaudit":
 	
@@ -217,4 +218,40 @@ switch($ts){
 		}
 		
 		break;
+
+
+    /**
+     * 帖子加标注
+     */
+    case "book":
+
+        $userid = aac('user')->isLogin();
+        $topicid = intval($_POST['topicid']);
+        $book = trim($_POST['book']);
+
+        if($topicid==0 || $book==''){
+            echo 0;exit;
+        }
+
+        if($TS_USER['isadmin']==1){
+            $new['group']->update('group_topic',array(
+                'topicid'=>$topicid,
+            ),array(
+                'label'=>$book,
+            ));
+        }else{
+            $new['group']->update('group_topic',array(
+                'topicid'=>$topicid,
+                'userid'=>$userid,
+            ),array(
+                'label'=>$book,
+            ));
+        }
+
+
+
+        echo 1;exit;
+
+        break;
+
 }

@@ -4,9 +4,9 @@ return array(
 	'name'	=> 'Home',
 	'version'	=> '1.2',
 	'desc'	=> 'Home',
-	'url' => 'http://www.thinksaas.cn',
+	'url' => 'https://www.thinksaas.org',
 	'email' => 'thinksaas@qq.com',
-	'author' => 'Jun Qiu',
+	'author' => 'Qiu Jun',
 	'author_url' => 'http://www.thinksaas.cn',
 	'isoption'	=> '1',
 	'isinstall'	=> '1',
@@ -14,4 +14,11 @@ return array(
 	'issystem'	=> '1',
 	'isappnav'	=> '1',
     'ismy'=>0,
+    'hook'=>array(
+        //插件钩子
+        'home_index_header'=>'上通栏',
+        'home_index_left'=>'中左栏',
+        'home_index_right'=>'中右栏',
+        'home_index_footer'=>'下通栏',
+    ),
 );

@@ -21,10 +21,10 @@
 <div class="clear"></div>
 
 <ul class="other">
-<li class="br"><span class="fs14"><a href="{tsUrl('user','group',array('id'=>$strUser['userid']))}">{$strUser['count_group']}</a></span><br />Group</li>
-<li class="br"><span class="fs14"><a href="{tsUrl('user','topic',array('id'=>$strUser['userid']))}">{$strUser['count_topic']}</a></span><br />Topic</li>
-<li class="br"><span class="fs14"><a href="{tsUrl('user','followed',array('id'=>$strUser['userid']))}">{$strUser['count_followed']}</a></span><br />Fans</li>
-<li><span class="fs14"><a href="{tsUrl('user','follow',array('id'=>$strUser['userid']))}">{$strUser['count_follow']}</a></span><br />Follow</li>
+<li class="br"><span class="fs14"><a href="{tsUrl('user','group',array('id'=>$strUser['userid']))}">{$strUser['count_group']}</a></span><br />小组</li>
+<li class="br"><span class="fs14"><a href="{tsUrl('user','topic',array('id'=>$strUser['userid']))}">{$strUser['count_topic']}</a></span><br />帖子</li>
+<li class="br"><span class="fs14"><a href="{tsUrl('user','followed',array('id'=>$strUser['userid']))}">{$strUser['count_followed']}</a></span><br />粉丝</li>
+<li><span class="fs14"><a href="{tsUrl('user','follow',array('id'=>$strUser['userid']))}">{$strUser['count_follow']}</a></span><br />关注</li>
 </ul>
 
 <div class="clear"></div>
@@ -55,14 +55,14 @@
 <div class="login">
 <form action="{tsUrl('user','login',array('ts'=>'do'))}" method="post">
 
-<legend>登录</legend>
+<legend>Sign in</legend>
 <div class="form-group">
-<label>Email:</label>
+<label>Account：</label>
 <br />
-<input class="form-control" type="email" name="email">
+<input class="form-control" type="text" name="email" placeholder="Email">
 </div>
 <div class="form-group">
-<label>密码：</label>
+<label>Password：</label>
 <br />
 <input class="form-control" type="password" name="pwd">
 </div>
@@ -70,9 +70,9 @@
 
 <input type="hidden" name="cktime" value="2592000" />
 <input type="hidden" name="token" value="{$_SESSION['token']}" />
-<button type="submit" class="btn btn-sm btn-info">Sign In</button>
+<button type="submit" class="btn btn-sm btn-info">Sign in</button>
 
-    <a class="btn btn-sm text-black-50" href="{tsUrl('user','register')}">还没有注册？</a>
+    <a class="btn btn-sm text-black-50" href="{tsUrl('user','register')}">Create an account</a>
 
 
 

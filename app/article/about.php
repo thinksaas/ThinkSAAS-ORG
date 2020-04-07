@@ -1,6 +1,6 @@
 <?php
 /**
- * Article App Info
+ * 文章基本信息
  */
 defined('IN_TS') or die('Access Denied.');
 return array(
@@ -9,7 +9,7 @@ return array(
     'desc' => 'Article',
     'url' => 'http://www.thinksaas.cn',
     'email' => 'thinksaas@qq.com',
-    'author' => 'Jun Qiu',
+    'author' => 'Qiu Jun',
     'author_url' => 'http://www.thinksaas.cn',
     'isoption' => '1',
     'isinstall' => '1',

@@ -6,7 +6,7 @@ return array(
 	'desc'	=> 'Group',
 	'url' => 'http://www.thinksaas.cn',
 	'email' => 'thinksaas@qq.com',
-	'author' => 'Jun Qiu',
+	'author' => 'Qiu Jun',
 	'author_url' => 'http://www.thinksaas.cn',
 	'isoption'	=> '1',
 	'isinstall'	=> '1',

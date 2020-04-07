@@ -9,7 +9,13 @@ function links_html(){
 		$arrLink = $tsMySqlCache->get('plugins_home_links');
 	}
 
-    include template('links','links');
+	echo '<div class="card">';
+	echo '<div class="card-header">Links</div>';
+	echo '<div class="card-body">';
+	foreach($arrLink as $item){
+		echo '<a class="fs14 mr-3" target="_blank" href="'.$item['linkurl'].'">'.$item['linkname'].'</a> ';
+	}
+	echo '</div></div>';
 }
 
 addAction('home_index_footer','links_html');

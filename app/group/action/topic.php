@@ -1,7 +1,7 @@
 <?php
 defined('IN_TS') or die('Access Denied.');
 
-$topicid = intval($_GET['id']);
+$topicid = tsIntval($_GET['id']);
 
 $strTopic = $new['group']->find('group_topic',array(
     'topicid'=>$topicid,
@@ -16,7 +16,12 @@ if($strTopic==''){
     exit;
 }
 
-
+#永久性跳转到其他项目
+if($strTopic['ptable'] && $strTopic['pid']){
+    Header("HTTP/1.1 301 Moved Permanently");
+    header('Location: '.getProjectUrl($strTopic['ptable'],$strTopic['pid']));
+    exit();
+}
 
 //帖子审核 
 if($strTopic['isaudit']==1 && $GLOBALS['TS_USER']['isadmin']==0){
@@ -41,7 +46,7 @@ if(intval($TS_USER['userid'])){
 if ($strGroup['isopen'] == '1' && $strGroupUser == '') {
     $title = $strTopic['title'];
     include template("topic_isopen");exit;
-}elseif($strGroup['isopen'] == '1' && $TS_APP['ispayjoin']==1 && $strGroupUser['endtime']!='0000-00-00' && $strGroupUser['endtime'] <date('Y-m-d')){
+}elseif($strGroup['isopen'] == '1' && $strGroupUser && $TS_APP['ispayjoin']==1 && $strGroupUser['endtime']!='0000-00-00' && $strGroupUser['endtime']!='1970-01-01' && $strGroupUser['endtime'] <date('Y-m-d')){
     $title = $strTopic['title'];
     include template("topic_xuqi");exit;
 }
@@ -55,9 +60,11 @@ $tpUrl = tpPage($strTopic['content'],'group','topic',array('id'=>$topicid));
 $strTopic['content'] = tsDecode($strTopic['content'],$tp);
 
 //判断是否评论后显示帖子内容
-$isComment = $new['group']->findCount('group_topic_comment', array(
+$isComment = $new['group']->findCount('comment', array(
+    'ptable'=>'group_topic',
+    'pkey'=>'topicid',
+    'pid' => $strTopic['topicid'],
     'userid' => intval($TS_USER['userid']),
-    'topicid' => $strTopic['topicid'],
 ));
 
 if($strTopic['iscommentshow']==1 && $isComment==0 && $strTopic['userid']!=intval($TS_USER['userid'])){
@@ -86,9 +93,20 @@ $strTopic['content'] = @preg_replace("/\[@(.*)\:(.*)]/U","<a href='".tsUrl('user
 
 
 
+//处理通过小程序或者客户端发的图片
+$strTopic['photos'] = $new['group']->getTopicPhoto($topicid);
+
+
+
+#应用扩展
+$strProject = $new['group']->getProject($strTopic['ptable'],$strTopic['pkey'],$strTopic['pid']);
+$strTopic['video'] = $strProject['video'];
+
+
+
 // 帖子标签
 $strTopic['tags'] = aac('tag')->getObjTagByObjid('topic', 'topicid', $topicid);
-$strTopic['user'] = aac('user')->getOneUser($strTopic['userid']);
+$strTopic['user'] = aac('user')->getSimpleUser($strTopic['userid']);
 
 //把标签作为关键词
 if($strTopic['tags']){
@@ -104,37 +122,11 @@ $title = $strTopic['title'].'_'.$strGroup['groupname'];
 
 
 // 评论列表开始
-$page = isset($_GET['page']) ? intval($_GET['page']) : 1;
+$page = tsIntval($_GET['page'],1);
 $url = tsUrl('group', 'topic', array('id' => $topicid, 'page' => ''));
-
 $lstart = $page * 15-15;
-
-$arrComment = $new['group']->findAll('group_topic_comment',array(
-    'topicid'=>$topicid,
-),'addtime desc',null,$lstart.',15');
-
-foreach($arrComment as $key => $item)
-{
-    $arrTopicComment[] = $item;
-    $arrTopicComment[$key]['l'] = (($page-1) * 15) + $key + 1;
-    $arrTopicComment[$key]['user'] = aac('user')->getOneUser($item['userid']);
-
-    $arrTopicComment[$key]['content'] = tsDecode($item['content']);
-
-    $arrTopicComment[$key]['recomment'] = $new['group']->recomment($item['referid']);
-
-    ####评论关联附件开始####
-    if($TS_APP['istopicattach']){
-        $arrTopicComment[$key]['attach'] = $new['group']->getCommentAttach($item['commentid']);
-    }
-    ####评论关联附件结束####
-
-}
-
-$commentNum = $new['group']->findCount('group_topic_comment',array(
-    'topicid'=>$strTopic['topicid'],
-));
-
+$arrComment = aac('pubs')->getCommentList('group_topic','topicid',$strTopic['topicid'],$page,$lstart,$strTopic['userid']);
+$commentNum = aac('pubs')->getCommentNum('group_topic','topicid',$strTopic['topicid']);
 $pageUrl = pagination($commentNum, 15, $page, $url);
 // 评论列表结束
 
@@ -159,15 +151,27 @@ $newTopic = $new['group']->findAll('group_topic',array(
 
 
 
-
-####帖子关联附件APP开始####
-if($TS_APP['istopicattach']){
-    $arrAttach = $new['group']->getTopicAttach($strTopic['topicid']);
+//判断用户可阅读帖子：0可读1不可读
+$isread = 0;
+if($strTopic['score']>0) $isread = 1;
+if($TS_USER['userid'] && $strTopic['userid']==$TS_USER['userid']) $isread=0;
+if($TS_USER['userid'] && $strTopic['userid']!=$TS_USER['userid'] && $strTopic['score']>0){
+    $isTopicUser = $new['group']->findCount('group_topic_user',array(
+        'topicid'=>$topicid,
+        'userid'=>$TS_USER['userid'],
+    ));
+    if($isTopicUser>0) $isread=0;
 }
-####帖子关联附件APP结束####
+if($TS_USER['isadmin']==1) $isread=0;
+
+
 
 
 $sitedesc = cututf8(t($strTopic['content']),0,100);
+
+$content = $strTopic['content'];
+#钩子
+doAction('group_topic',$content);
 
 include template('topic');
 

@@ -4,7 +4,7 @@ switch($ts){
 
 	//某一个相册
 	case "":
-		$albumid = intval($_GET['id']);
+		$albumid = tsIntval($_GET['id']);
 		$strAlbum = $new['photo']->find('photo_album',array(
 			'albumid'=>$albumid,
 		));
@@ -31,14 +31,14 @@ switch($ts){
 		
 		$lstart = $page*20-20;
 		
-		$strUser = aac('user')->getOneUser($strAlbum['userid']);
+		$strUser = aac('user')->getSimpleUser($strAlbum['userid']);
 		
 		$arrPhoto = $new['photo']->findAll('photo',array(
 			'albumid'=>$albumid,
 		),'photoid desc',null,$lstart.',20');
 		
 		foreach($arrPhoto as $key=>$item){
-			$arrPhoto[$key]['photodesc'] = stripslashes($item['photodesc']);
+			$arrPhoto[$key]['photodesc'] = tsTitle($item['photodesc']);
 		}
 		
 		$photoNum = $new['photo']->findCount('photo',array(
@@ -76,6 +76,9 @@ switch($ts){
 		));
 		
 		if($strAlbum['userid'] == $userid || $TS_USER['isadmin']==1) {
+
+            $strAlbum['albumname'] = tsTitle($strAlbum['albumname']);
+            $strAlbum['albumdesc'] = tsTitle($strAlbum['albumdesc']);
 		
 			$title = '修改相册属性-'.$strAlbum['albumname'];
 			include template("album_edit");
@@ -140,6 +143,9 @@ switch($ts){
 		$strAlbum = $new['photo']->find('photo_album',array(
 			'albumid'=>$albumid,
 		));
+
+        $strAlbum['albumname'] = tsTitle($strAlbum['albumname']);
+        $strAlbum['albumdesc'] = tsTitle($strAlbum['albumdesc']);
 		
 		if($strAlbum['userid'] != $userid) {
 		
@@ -186,7 +192,8 @@ switch($ts){
 		$arrPhoto = $new['photo']->findAll('photo',$arr);
 		
 		foreach($arrPhoto as $key=>$item){
-			$arrPhoto[$key]['photodesc'] = stripslashes($item['photodesc']);
+			$arrPhoto[$key]['title'] = tsTitle($item['title']);
+			$arrPhoto[$key]['photodesc'] = tsTitle($item['photodesc']);
 		}
 		
 		
@@ -236,6 +243,7 @@ switch($ts){
 				
 				$new['photo']->update('photo',array(
 					'photoid'=>$photoid,
+                    'userid'=>$userid,
 				),array(
 				
 					'photodesc'=>trim($item),

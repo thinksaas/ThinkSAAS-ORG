@@ -11,7 +11,7 @@ switch($ts){
 	
 	//编辑帖子
 	case "":
-		$topicid = intval($_GET['topicid']);
+		$topicid = tsIntval($_GET['topicid']);
 
 		if($topicid == 0){
 			header("Location: ".SITE_URL);
@@ -31,7 +31,7 @@ switch($ts){
 			'topicid'=>$topicid,
 		));
 		
-		$strTopic['title'] = stripslashes($strTopic['title']);
+		$strTopic['title'] = tsTitle($strTopic['title']);
 		$strTopic['content'] = tsDecode($strTopic['content']);
 		
 		$strGroup = $new['group']->find('group',array(
@@ -88,13 +88,19 @@ switch($ts){
 		//echo br2nl($_POST['content']);exit;
 		
 		$content = tsClean($_POST['content']);
-		
+		$content2 = emptyText($_POST['content']);
+
+        $score = intval($_POST ['score']);#积分
+
 		$iscomment = intval($_POST['iscomment']);
 		$iscommentshow = intval($_POST['iscommentshow']);
 		
-		if($topicid == '' || $title=='' || $content=='') tsNotice("都不能为空的哦!");
-		
-		
+		if($topicid == '' || $title=='' || $content2=='') tsNotice("都不能为空的哦!");
+
+        if($score<0){
+            tsNotice ( '积分填写有误！' );
+        }
+
 		if($TS_USER['isadmin']==0){
 		
 			//过滤内容开始
@@ -125,6 +131,7 @@ switch($ts){
 				'typeid' => $typeid,
 				'title'=>$title,
 				'content'=>$content,
+				'score'=>$score,
 				'iscomment' => $iscomment,
 				'iscommentshow' => $iscommentshow,
 			));

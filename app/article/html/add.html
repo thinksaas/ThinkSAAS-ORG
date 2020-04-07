@@ -1,4 +1,35 @@
 {php include pubTemplate("header")}
+
+<script>
+    $(document).ready(function() {
+
+        //选择一级区域
+        $('#cateid').change(function(){
+            $("#select2").html('<img src="'+siteUrl+'public/images/loading.gif" />');
+            var cateid = $(this).children('option:selected').val();  //弹出select的值
+
+            if(cateid==0){
+                $("#select2").html('');
+
+            }else{
+
+                $.ajax({
+                    type: "GET",
+                    url:  "{SITE_URL}index.php?app=article&ac=ajax&ts=twocate&referid="+cateid,
+                    success: function(msg){
+                        $("#select2").html(msg);
+                    }
+                });
+
+            }
+
+        });
+
+    });
+</script>
+
+
+
 <div class="container">
 
     <nav aria-label="breadcrumb">
@@ -28,21 +59,33 @@
 {if $arrCate}  
   <div class="form-group">
     <label>分类：</label>
-    
-<select id="cateid" name="cateid" class="form-control">
-{loop $arrCate $key $item}
-<option value="{$item['cateid']}">{$item['catename']}</option>
-{/loop}
-</select>
+
+      <div class="row">
+          <div class="col-6 col-md-6">
+
+              <select id="cateid" name="cateid" class="form-control">
+                  <option value="0">选择一级分类</option>
+                  {loop $arrCate $key $item}
+                  <option value ="{$item['cateid']}">{$item['catename']}</option>
+                  {/loop}
+              </select>
+
+          </div>
+          <div id="select2" class="col-6 col-md-6">
+
+
+
+          </div>
+      </div>
+
 	
   </div>
 {/if}
 
   <div class="form-group">
     <label>内容：</label>
-      <div id="tseditor"></div>
-      <div style="display: none;">
-          <textarea name="content"></textarea>
+      <div>
+          <textarea  id="tseditor" name="content"></textarea>
       </div>
   </div>
 
@@ -60,13 +103,28 @@
    <div class="form-group">
     <label>封面图片：</label>
 
-       <div class="custom-file">
-           <input type="file" name="photo" class="custom-file-input" id="customFile" accept="image/jpeg,image/png">
-           <label class="custom-file-label c9" for="customFile">支持jpg,png格式；大小640*400px</label>
+       <!--
+       <div>
+           <input type="file" name="photo" accept="image/jpeg,image/png"> <span class="fs12 c9">(支持jpg,png格式；大小640*400px)</span>
+       </div>
+       -->
+
+       <div class="custom-file" onchange="imgView()">
+           <input id="img-file" type="file" name="photo" class="custom-file-input" accept="image/jpeg,image/png">
+           <label class="custom-file-label c9" for="img-file" data-browse="封面图">(支持jpg,png格式；大小640*360px)</label>
+       </div>
+
+       <div id="img-view" style="display: none;">
+           <img src="" id="img-show" height="200">
        </div>
 
   </div>
 
+
+    <div class="form-group">
+        <label>查看需要</label>
+        <input type="text" name="score" value="0" onkeyup="NumberCheck(this)" /> 积分
+    </div>
 
 
   

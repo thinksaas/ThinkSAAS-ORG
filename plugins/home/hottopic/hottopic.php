@@ -5,8 +5,19 @@ function hottopic(){
 	$arrHotTopics = aac('group')->findAll('group_topic',array(
 	    'isaudit'=>0,
     ),'addtime desc','topicid,title',10);
-
-    include template('hottopic','hottopic');
+	
+	echo '<div class="card">';
+	echo '<div class="card-header">Latest topics</div>';
+	echo '<div class="card-body">';
+	echo '<div class="commlist">';
+	echo '<ul>';
+	foreach($arrHotTopics as $key=>$item){
+		echo '<li><a href="'.tsUrl('group','topic',array('id'=>$item['topicid'])).'">'.tsTitle($item['title']).'</a></li>';
+	}
+	echo '</ul>';
+	echo '</div>';
+	echo '</div>';
+	echo '</div>';
 	
 }
 

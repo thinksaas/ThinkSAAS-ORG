@@ -1,7 +1,5 @@
 {php include pubTemplate("header")}
 <div class="container">
-
-
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{SITE_URL}">首页</a></li>
@@ -13,7 +11,6 @@
         </ol>
     </nav>
 
-
     <div class="mb-3">
         <a class="btn btn-sm {if $cateid=='0'}btn-outline-secondary{else}text-secondary{/if}" href="{tsUrl('article')}">全部</a>
         {loop $arrCate $key $item}
@@ -21,23 +18,14 @@
         {/loop}
     </div>
 
-
-
     <div class="row">
-
-
-
-
 
         <div class="col-md-8">
 
             <div class="card">
                 <div class="card-body">
 
-
                     <h1 class="h3 pb-3 fw400">{$strArticle[title]}</h1>
-
-
 
                     <div class="media mt-3 mb-3">
 
@@ -60,17 +48,25 @@
                     {/if}
 
 
+                    {if $isread==1}
+                    <div class="alert alert-info">查看文章需要支付 <span class="text-danger">{$strArticle['score']}积分</span> <a class="btn btn-sm btn-success" href="javascript:void('0');" onclick="tsPost('index.php?app=article&ac=score&ts=pay',{'articleid':'{$articleid}'})">支付</a></div>
+                    {else}
 
-                    <div class="article_show_content lh30">
-                        {php doAction('gobad','content_top')}
+                    <div class="article_show_content lh30 common-content">
+
                         {$strArticle[content]}
 
                         {$tpUrl}
 
-                        <div class="fs12 c9">{php doAction('gobad','468')}</div>
-
                     </div>
+                    {/if}
 
+
+                    <!--文章内容底部插件钩子-->
+                    <div>{php doAction('article_show_footer')}</div>
+
+
+                    <div class="mt-3">{php doAction('gobad','468')}</div>
 
 
                     <div class="of mt-3">
@@ -84,7 +80,6 @@
 
                         </div>
 
-
                         {if $TS_USER[isadmin]==1 || $TS_USER['userid']==$strArticle['userid']}
                         <div class="float-right text-right">
 
@@ -96,21 +91,14 @@
 
                     </div>
 
-
-
-
-
-
-
                     <hr />
 
-
-                            {if $strUp}
-                            <div class="fs13 text-secondary">上一篇：<a class="text-secondary" href="{tsUrl('article','show',array('id'=>$strUp['articleid']))}">{$strUp['title']}</a></div>
-                            {/if}
-                            {if $strNext}
-                            <div class="fs13 text-secondary">下一篇：<a class="text-secondary" href="{tsUrl('article','show',array('id'=>$strNext['articleid']))}">{$strNext['title']}</a></div>
-                            {/if}
+                    {if $strUp}
+                    <div class="fs13 text-secondary">上一篇：<a class="text-secondary" href="{tsUrl('article','show',array('id'=>$strUp['articleid']))}">{$strUp['title']}</a></div>
+                    {/if}
+                    {if $strNext}
+                    <div class="fs13 text-secondary">下一篇：<a class="text-secondary" href="{tsUrl('article','show',array('id'=>$strNext['articleid']))}">{$strNext['title']}</a></div>
+                    {/if}
 
 
 
@@ -120,86 +108,57 @@
 
 
             <div class="card">
-                <div class="card-header">你的回应</div>
+                <div class="card-header">评论{if $strArticle['count_comment']} <small class="text-secondary">({$strArticle['count_comment']})</small>{/if}</div>
                 <div class="card-body">
 
-                    {if $arrComment}
-                    <div class="comment">
-                        <ul>
-                            {loop $arrComment $key $item}
-                            <li class="clearfix">
-                                <div class="user-face">
-                                    <a href="{tsUrl('user','space',array('id'=>$item[user][userid]))}"><img class="rounded-circle" title="{$item[user][username]}" alt="{$item[user][username]}" src="{$item[user][face]}" width="48" /></a>
-                                </div>
-                                <div class="reply-doc">
-                                    <h4>
-                                        {php echo date('Y-m-d H:i:s',$item[addtime])}
-                                        <a class="c9" href="{tsUrl('user','space',array('id'=>$item[userid]))}">{$item[user][username]}</a>
-                                    </h4>
-                                    <p>{$item[content]}</p>
-                                    {if $TS_USER[userid] == $strArticle[userid] ||
-                                    $TS_USER['isadmin']==1}
-                                    <div class="mb-2 text-right">
-									<a class="fs12 text-secondary" href="{SITE_URL}index.php?app=article&ac=comment&ts=delete&commentid={$item['commentid']}"><i class="far fa-trash-alt"></i> 删除</a>
-                                    </div>
-                                    {/if}
-                                </div>
-                            </li> {/loop}
-                        </ul>
-                    </div>
-                    <div class="page">{$pageUrl}</div>
-                    {/if}
 
 
 
-                    <div>
+                    <!--评论列表-->
+                    {php include pubTemplate("comment")}
+
+
+
+
+
+                    <div class="commentform">
+                        
                         {if intval($TS_USER[userid])==0}
-                        <div class="pd20 tac">
-                            <a href="{tsUrl('user','login')}">登录</a> | <a href="{tsUrl('user','register')}">注册</a>
-                        </div>
-                        {else}
-                        <form method="POST" action="{SITE_URL}index.php?app=article&ac=comment&ts=do">
-
-
-                            <div class="wangeditor_toolbar" id="tseditor"></div>
-                            <div class="wangeditor_text" id="tseditor2"></div>
-							<div style="display: none"><textarea name="content"></textarea></div>
-
-
-
-                            <div class="mt-2 of">
-
-
-                                <div class="float-left">
-                                    {if $TS_SITE['isauthcode']}
-                                    验证码：<input name="authcode" />
-                                    <img align="absmiddle" src="{tsUrl('pubs','code')}" onclick="javascript:newgdcode(this,this.src);" title="点击刷新验证码" alt="点击刷新验证码" style="cursor:pointer;"/>
-                                    {/if}
-
-                                </div>
-
-
-                                <div class="float-right">
-                                    <input type="hidden" name="articleid" value="{$strArticle[articleid]}" />
-                                    <input type="hidden" name="token" value="{$_SESSION['token']}" />
-
-                                    <button class="btn btn-sm btn-info" type="submit">回复</button>
-                                </div>
-
-
-
-
+                            <div class="tac pd20 fw300">
+                                <a href="{tsUrl('user','login')}">登录</a> | <a href="{tsUrl('user','register')}">注册</a>
                             </div>
+                            {else}
 
+                            <form id="comm-form" method="post" action="{SITE_URL}index.php?app=pubs&ac=comment&ts=do">
+                                <div >
+                                    <textarea id="tseditor" name="content"></textarea>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-md-6">
+                                        {if $TS_SITE['isauthcode']}
+                                        <input class="form-control form-control-sm w-auto float-left" name="authcode" placeholder="输入验证码" />
+                                        <img class="mt-1 ml-1" src="{tsUrl('pubs','code')}" onclick="javascript:newgdcode(this,this.src);" title="点击刷新验证码" alt="点击刷新验证码" style="cursor:pointer;"/>
+                                        {/if}
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mt-1">是否公开：<input type="radio" name="ispublic" value="0" checked />公开 <input type="radio" name="ispublic" value="1" />不公开</div>
+                                    </div>
+                                    <div class="col-md-2 text-right">
+                                        <input type="hidden" name="ptable" value="article">
+                                        <input type="hidden" name="pkey" value="articleid">
+                                        <input type="hidden" name="pid" value="{$strArticle[articleid]}" />
+                                        <input type="hidden" name="token" value="{$_SESSION['token']}" />
+                                        <button class="btn btn-sm btn-info btn-block" type="submit">提交评论</button>
+                                    </div>
+                                </div>
+                            </form>
+                            {/if}
 
-
-                        </form>
-                        {/if}
                     </div>
-
 
                 </div>
             </div>
+
 
 
 
@@ -211,7 +170,7 @@
                     <div class="commlist">
                         <ul>
                             {loop $arrArticle $key $item}
-                            <li><a href="{tsUrl('article','show',array('id'=>$item['articleid']))}">{$item['title']}</a></li>
+                            <li><a href="{tsUrl('article','show',array('id'=>$item['articleid']))}">{php echo tsTitle($item['title'])}</a></li>
                             {/loop}
                         </ul>
                     </div>
@@ -222,10 +181,7 @@
 
         </div>
 
-
         <div class="col-md-4">
-
-
 
             <div class="card">
                 <div class="card-header">一周热门</div>
@@ -260,8 +216,6 @@
             <!--广告位-->
             {php doAction('gobad','300')}
         </div>
-
-
 
     </div>
 </div>

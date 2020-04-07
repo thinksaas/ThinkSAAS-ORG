@@ -126,7 +126,7 @@
 
     <div class="alert alert-info">你需要加入小组后才可以访问帖子内容</div>
 
-    {elseif $strGroup['isopen']==1 && $TS_APP['ispayjoin']==1 && $isGroupUser['endtime']!='0000-00-00' && $isGroupUser['endtime']<date('Y-m-d')}
+    {elseif $strGroup['isopen']==1 && $isGroupUser && $TS_APP['ispayjoin']==1 && $isGroupUser['endtime']!='0000-00-00' && $isGroupUser['endtime']!='1970-01-01' && $isGroupUser['endtime']<date('Y-m-d')}
     <div class="alert alert-info">你的组费已经到期，请联系组长续期！续期后才可以访问帖子内容。</div>
     {else}
 
@@ -165,36 +165,55 @@
 
 <div class="topic_title">
 <div class="title">
-{if $item[typeid] != 0}<a href="{tsUrl('group','show',array('id'=>$item[groupid],typeid=>$item[typeid]))}">[{$item[typename]}]</a>{/if}
 
-{if $item['appkey'] != 'group' && $item['appkey']!=''}
-<a target="_blank" style="color:#999999;font-size: 12px;margin-right: 5px;" class="titles-type" href="{SITE_URL}{php echo tsUrl($item['appkey'])}">[{$item['appname']}]</a>
-<a title="{$item[title]}" href="{SITE_URL}{php echo tsUrl($item['appkey'],$item['appaction'],array('id'=>$item['appid']))}">{$item[title]}</a>
-{else}
-<a title="{$item[title]}" href="{tsUrl('group','topic',array('id'=>$item[topicid]))}">{$item[title]}</a>
-{/if}
+{if $item['label']}<span class="badge badge-danger fw300">{tsTitle($item['label'])}</span>{/if}
 
-{if $item[istop]=='1'}
-<img src="{SITE_URL}app/{$app}/skins/{$skin}/headtopic_1.gif" title="[置顶]" alt="[置顶]" /> 
+{if $item['typeid'] != 0}<a href="{tsUrl('group','show',array('id'=>$item['groupid'],typeid=>$item['typeid']))}">[{$item['typename']}]</a>{/if}
+
+
+<a href="{tsUrl('group','topic',array('id'=>$item['topicid']))}">{$item['title']}</a>
+
+
+{if $item['istop']=='1'}
+<img src="{SITE_URL}public/images/ding.png" width="24" height="24" title="[置顶]" alt="[置顶]" />
 {/if} 
 
-{if $item[isposts] == '1'}
+{if $item['isposts'] == '1'}
 <img src="{SITE_URL}public/images/posts.gif" title="[精华]" alt="[精华]" />
 {/if}
-{if $item['postby']==1}<a href="{tsUrl('home','phone')}"><img align="absmiddle" alt="通过Iphone手机端发布" title="通过Iphone手机端发布" src="{SITE_URL}public/images/ios.jpg" /></a>{/if}
+
 
 </div>
-<div class="topic_info">
-<span style="float:left;">
-{php echo getTime($item[uptime],time())}
-</span>
 
-<span style="float:right;">
-<a href="{tsUrl('user','space',array('id'=>$item[userid]))}"  rel="face" uid="{$item['user']['userid']}">{$item[user][username]}</a>
 
-{if $item[count_comment]>0}<a class="rank" style="color:#FFFFFF;" href="{tsUrl('group','topic',array('id'=>$item[topicid]))}">{$item[count_comment]}</a>{/if}
-</span>
-</div>
+    {if $item['group']['isopen']==0 && $item['score']==0}
+    <div class="gaiyao mt-2 c9">
+        {$item['gaiyao']}
+    </div>
+    {if $item['photos']}
+    <div class="photo mt-2">
+        {loop $item['photos'] $pkey $pitem}
+        <a href="{tsUrl('group','topic',array('id'=>$item[topicid]))}"><img src="{$pitem}" /></a>
+        {/loop}
+    </div>
+    {/if}
+    {/if}
+
+
+    <div class="d-flex flex-row justify-content-between mt-2">
+        <div class="d-flex fs12 c9">
+            <a href="{tsUrl('user','space',array('id'=>$item[userid]))}">{$item[user][username]}</a>
+            <span class="ml-1">发表于</span>
+            <span class="ml-1">{php echo getTime($item[uptime],time())}</span>
+        </div>
+        <div class="d-flex c9 fs12">
+            <div><i class="far fa-comment-dots"></i> {$item['count_comment']}</div>
+            <div class="ml-3"><i class="far fa-eye"></i> {$item['count_view']}</div>
+        </div>
+    </div>
+
+
+
 </div>
 <div class="clear"></div>
 </li>	

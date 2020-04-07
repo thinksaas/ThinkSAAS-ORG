@@ -11,98 +11,95 @@ class group extends tsApp{
         if($tsAppDb){
             $db = new MySql($tsAppDb);
         }
-
         parent::__construct($db);
     }
 
-    //获取一个小组
+    /**
+     * 获取一个小组
+     *
+     * @param [type] $groupid
+     * @return void
+     */
     function getOneGroup($groupid){
         $strGroup=$this->find('group',array(
             'groupid'=>$groupid,
         ));
-
         if($strGroup){
             $strGroup['groupname'] = tsTitle($strGroup['groupname']);
-            #$strGroup['groupdesc'] = tsDecode($strGroup['groupdesc']);
-
-            if($strGroup['photo']){
-                $strGroup['photo'] = tsXimg($strGroup['photo'],'group',200,200,$strGroup['path'],1);
-            }else{
-                $strGroup['photo'] = SITE_URL.'public/images/group.jpg';
-            }
+            $strGroup['groupdesc'] = tsTitle($strGroup['groupdesc']);
+            $strGroup['photo'] = $this->getGroupPhoto($strGroup);
         }
-
         return $strGroup;
-
     }
 
-    //获取推荐的小组
-    function getRecommendGroup($num){
-        $arrRecommendGroups = $this->db->fetch_all_assoc("select groupid from ".dbprefix."group where isrecommend='1' limit $num");
-
-        $arrRecommendGroup = array();
-
-        if(is_array($arrRecommendGroups)){
-            foreach($arrRecommendGroups as $item){
-                $arrRecommendGroup[] = $this->getOneGroup($item['groupid']);
-            }
+    /**
+     * 获取小组头像
+     *
+     * @param [type] $strGroup
+     * @return void
+     */
+    function getGroupPhoto($strGroup){
+        if($strGroup['photo']){
+            $strFace = tsXimg($strGroup['photo'],'group',200,200,$strGroup['path'],1);
+        }else{
+            $strFace = SITE_URL.'public/images/group.jpg';
         }
-        return $arrRecommendGroup;
+        return $strFace;
     }
 
-    //获取最新创建的小组
-    function getNewGroup($num){
-        $arrNewGroups = $this->db->fetch_all_assoc("select groupid from ".dbprefix."group where `isaudit`='0' order by addtime desc limit $num");
-        if(is_array($arrNewGroups)){
-            foreach($arrNewGroups as $item){
-                $arrNewGroup[] = $this->getOneGroup($item['groupid']);
-            }
+    /**
+     * 获取推荐的小组
+     *
+     * @param integer $num
+     * @return void
+     */
+    function getRecommendGroup($num=10){
+        $arrGroup = $this->findAll('group',array(
+            'isrecommend'=>1,
+        ),'orderid asc','groupid,groupname,groupdesc,path,photo,count_user',$num);
+        foreach($arrGroup as $key=>$item){
+            $arrGroup[$key]['groupname'] = tsTitle($item['groupname']);
+            $arrGroup[$key]['groupdesc'] = tsTitle($item['groupdesc']);
+            $arrGroup[$key]['photo'] = $this->getGroupPhoto($item);
         }
-        return $arrNewGroup;
+        return $arrGroup;
     }
 
-
-
-
-    //Refer二级循环，三级循环暂时免谈
-    function recomment($referid){
-        $strComment = $this->find('group_topic_comment',array(
-            'commentid'=>$referid,
-        ));
-
-        $strComment['content'] = tsDecode($strComment['content']);
-
-        $strComment['user'] = aac('user')->getOneUser($strComment['userid']);
-        return $strComment;
+    /**
+     * 获取最新创建的小组
+     *
+     * @param integer $num
+     * @return void
+     */
+    function getNewGroup($num=10){
+        $arrGroup = $this->findAll('group',array(
+            'isaudit'=>0,
+        ),'addtime desc',null,$num);
+        foreach($arrGroup as $key=>$item){
+            $arrGroup[$key]['groupname'] = tsTitle($item['groupname']);
+            $arrGroup[$key]['groupdesc'] = tsTitle($item['groupdesc']);
+            $arrGroup[$key]['photo'] = $this->getGroupPhoto($item);
+        }
+        return $arrGroup;
     }
-
 
     //是否存在帖子
     public function isTopic($topicid){
-
         $isTopic = $this->findCount('group_topic',array(
             'topicid'=>$topicid,
         ));
-
         if($isTopic > 0){
-
             return true;
-
         }else{
-
             return false;
-
         }
-
     }
 
     //判断是否存在小组
     function isGroup($groupid){
-
         $isGroup = $this->findCount('group',array(
             'groupid'=>$groupid,
         ));
-
         if($isGroup > 0){
             return true;
         }else{
@@ -110,95 +107,56 @@ class group extends tsApp{
         }
     }
 
-
-
-
-    //删除帖子
-    public function delTopic($topicid,$groupid){
-
-        $this->delete('group_topic',array('topicid'=>$topicid));
-        $this->delete('group_topic_edit',array('topicid'=>$topicid));
-        $this->delete('group_topic_comment',array('topicid'=>$topicid));
-        $this->delete('tag_topic_index',array('topicid'=>$topicid));
-        $this->delete('group_topic_collect',array('topicid'=>$topicid));
-
-        #删除帖子附件
-        $this->delete('group_topic_attach',array('topicid'=>$topicid));
-
-        $this->delTopicComment($topicid);
-
-        $this->countTopic($groupid);
-
-        return true;
-
-    }
-
-
-
-    //删除话题评论
-    public function delTopicComment($topicid){
-        $arrComment = $this->findAll('group_topic_comment',array(
+    /**
+     * 获取一条帖子信息
+     *
+     * @param [type] $topicid
+     * @return void
+     */
+    public function getOneTopic($topicid){
+        $strTopic = $this->find('group_topic',array(
             'topicid'=>$topicid,
         ));
+        return $strTopic;
+    }
 
-        foreach($arrComment as $item){
-            $this->delComment($item['commentid']);
+    /**
+     * 删除帖子
+     *
+     * @param array $strTopic
+     * @return void
+     */
+    public function deleteTopic($strTopic=array()){
+
+        $this->delete('group_topic',array('topicid'=>$strTopic['topicid']));
+        $this->delete('tag_topic_index',array('topicid'=>$strTopic['topicid']));
+        
+
+        #删除评论ts_comment
+        aac('pubs')->delComment('group_topic','topicid',$strTopic['topicid']);
+
+        #删除点赞ts_love
+        aac('pubs')->delLove('group_topic','topicid',$strTopic['topicid']);
+
+
+        #删除图片ts_group_topic_photo
+        $arrPhoto = $this->findAll('group_topic_photo',array(
+            'topicid'=>$strTopic['topicid'],
+        ));
+
+        if($arrPhoto){
+            foreach($arrPhoto as $key=>$item){
+                unlink('uploadfile/group/topic/photo/'.$item['photo']);
+                tsDimg($item['photo'],'group/topic/photo','320','320',$item['path'],1);
+                tsDimg($item['photo'],'group/topic/photo','640','',$item['path']);
+            }
+            $this->delete('group_topic_photo',array('topicid'=>$strTopic['topicid']));
         }
+
+        $this->countTopic($strTopic['groupid']);
 
         return true;
 
-    }
-
-    //删除评论
-    public function delComment($commentid){
-        $strComment = $this->find('group_topic_comment',array(
-            'commentid'=>$commentid,
-        ));
-
-        $this->delete('group_topic_comment',array(
-            'commentid'=>$commentid,
-        ));
-
-        #删除评论附件
-        $this->delete('group_comment_attach',array(
-            'commentid'=>$commentid,
-        ));
-
-        return true;
-
-    }
-
-    //热门帖子：一天1
-    public function hotTopics($day,$num=10){
-
-        $startTime = time()-($day*3600*60);
-        $endTime = time();
-
-        $arrTopic = $this->findAll('group_topic',"`addtime`>'$startTime' and `addtime` < '$endTime' and and `isaudit`='0'",'count_comment desc',null,$num);
-
-        return $arrTopic;
-
-    }
-
-    //推荐喜欢的帖子
-    public function loveTopic($topicId,$userNum){
-        $strLike['num'] = $this->findCount('group_topic_collect',array(
-            'topicid'=>$topicId,
-        ));
-
-        $strLike['topic']=$this->find('group_topic',array(
-            'topicid'=>$topicId,
-        ));
-
-        $likeUsers = $this->findAll('group_topic_collect',array(
-            'topicid'=>$topicId,
-        ),'addtime desc',null,$userNum);
-
-        foreach($likeUsers as $key=>$item){
-            $strLike['user'][]=aac('user')->getOneUser($item['userid']);
-        }
-
-        return $strLike;
     }
 
     /*
@@ -219,7 +177,7 @@ class group extends tsApp{
 
     //热门帖子,1天，7天，30天
     public function getHotTopic($day){
-        $startTime = time()-($day*3600*60);
+        $startTime = time()-($day*3600*24);
 
         $endTime = time();
 
@@ -228,7 +186,6 @@ class group extends tsApp{
         $arrTopic = $this->findAll('group_topic',$arr,'addtime desc','topicid,title,count_view,count_comment',10);
         foreach($arrTopic as $key=>$item){
             $arrTopic[$key]['title']=tsTitle($item['title']);
-            $arrTopic[$key]['content']=tsDecode($item['content']);
         }
 
         return $arrTopic;
@@ -274,8 +231,8 @@ class group extends tsApp{
     }
 
     /*
- * 是否小组管理员，仅次于小组组长
- */
+    * 是否小组管理员，仅次于小组组长
+    */
     public function isGroupAdmin($groupid,$userid){
         $isAdmin = $this->findCount('group_user',array(
             'userid'=>$userid,
@@ -305,41 +262,53 @@ class group extends tsApp{
     }
 
     /**
-     * 获取帖子附件
+     * 获取帖子图片，处理通过小程序或者客户端发的图片
      */
-    public function getTopicAttach($topicid){
-        $arrAttachId = $this->findAll('group_topic_attach',array(
+    public function getTopicPhoto($topicid,$num=null){
+        $arrPhotos = $this->findAll('group_topic_photo',array(
             'topicid'=>$topicid,
-        ));
-        if($arrAttachId){
-            foreach ($arrAttachId as $key=>$item){
-                $arrIds[] = $item['attachid'];
+        ),'addtime desc',null,$num);
+
+        foreach($arrPhotos as $key=>$item){
+            if($num){
+                $arrPhoto[$key] = tsXimg($item['photo'],'group/topic/photo','320','320',$item['path'],1);
+            }else{
+                $arrPhoto[$key] = tsXimg($item['photo'],'group/topic/photo','640','',$item['path']);
             }
-            $attachids = arr2str($arrIds);
-            $arrAttach = $this->findAll('attach',"`attachid` in ($attachids)",'addtime desc');
-        }else{
-            $arrAttach = '';
         }
-        return $arrAttach;
+
+        return $arrPhoto;
+
     }
 
-    /**
-     * 获取评论关联附件
-     */
-    public function getCommentAttach($commentid){
-        $arrAttachId = $this->findAll('group_comment_attach',array(
-            'commentid'=>$commentid,
-        ));
-        if($arrAttachId){
-            foreach ($arrAttachId as $key=>$item){
-                $arrIds[] = $item['attachid'];
+
+    public function getProject($ptable,$pkey,$pid){
+        if($ptable && $pkey && $pid){
+
+            $strProject = $this->find($ptable,array(
+                $pkey=>$pid,
+            ));
+
+            if($ptable=='article'){
+                ########文章########
+                $strProject['title'] = tsTitle($strProject['title']);
+                $strProject['content'] = tsDecode($strProject['content']);
+                #处理正文样式和图片
+                $strProject['content'] = mobileHtml($strProject['content']);
+                if($strProject['photo']){
+                    $strProject['photo'] = tsXimg($strProject['photo'],'article',640,360,$strProject['path'],'1');
+                }
+                $topicInfo['article'] = $strProject;
+
+            }elseif($ptable=='video'){
+                ########视频########
+                $topicInfo['video'] = SITE_URL.'uploadfile/video/'.$strProject['video'];
+
             }
-            $attachids = arr2str($arrIds);
-            $arrAttach = $this->findAll('attach',"`attachid` in ($attachids)",'addtime desc');
-        }else{
-            $arrAttach = '';
+
+            return $topicInfo;
+
         }
-        return $arrAttach;
     }
 
 

@@ -1,8 +1,0 @@
-<div class="card">
-    <div class="card-header">Hot Tags<small class="float-right"><a class="text-black-50" href="'.tsUrl('group','tags').'">More</a></small></div>
-    <div class="card-body">
-        {loop $arrTag $key $item}
-        <a class="badge badge-secondary mr-2 fw300" href="{tsUrl('group','tag',array('id'=>urlencode($item['tagname'])))}">{$item['tagname']}</a>
-        {/loop}
-        </div>
-</div>

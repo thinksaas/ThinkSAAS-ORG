@@ -7,10 +7,9 @@ class weiboAdmin extends weibo{
      * 配置选项
      * */
     public function options(){
-		$arrOptions = $this->findAll('weibo_options');
-		foreach($arrOptions as $item){
-			$strOption[$item['optionname']] = stripslashes($item['optionvalue']);
-		}
+
+        $strOption = getAppOptions('weibo');
+
         include template("admin/options");
     }
 	
@@ -18,31 +17,11 @@ class weiboAdmin extends weibo{
 	 * 保存配置
 	 */
     public function optionsdo(){
-        //先清空数据
-        $this->doSql("TRUNCATE TABLE `".dbprefix."weibo_options`");
-
-        foreach($_POST['option'] as $key=>$item){
-
-            $optionname = $key;
-            $optionvalue = trim($item);
-
-            $this->create('weibo_options',array(
-
-                'optionname'=>$optionname,
-                'optionvalue'=>$optionvalue,
-
-            ));
-
-        }
-
-        $arrOptions = $this->findAll('weibo_options',null,null,'optionname,optionvalue');
-        foreach($arrOptions as $item){
-            $arrOption[$item['optionname']] = $item['optionvalue'];
-        }
-
-        fileWrite('weibo_options.php','data',$arrOption);
-        $GLOBALS['tsMySqlCache']->set('weibo_options',$arrOption);
-
+        $arrOption = $_POST['option'];
+        #更新app配置选项
+        upAppOptions('weibo',$arrOption);
+        #更新app导航和我的导航
+        upAppNav('weibo',$arrOption['appname']);
         qiMsg('修改成功！');
     }
 
@@ -54,6 +33,9 @@ class weiboAdmin extends weibo{
         $url = SITE_URL.'index.php?app=weibo&ac=admin&mg=weibolist&page=';
         $lstart = $page*20-20;
         $arrWeibo = $this->findAll('weibo',null,'addtime desc',null,$lstart.',20');
+        foreach($arrWeibo as $key=>$item){
+            $arrWeibo[$key]['title'] = tsTitle($item['title']);
+        }
 
         $weiboNum = $this->findCount('weibo');
         $pageUrl = pagination($weiboNum, 20, $page, $url);
@@ -110,9 +92,13 @@ class weiboAdmin extends weibo{
             'weiboid'=>$weiboid,
         ));
 
-        $this->delete('weibo_comment',array(
-            'weiboid'=>$weiboid,
-        ));
+        
+        #删除评论ts_comment
+        aac('pubs')->delComment('weibo','weiboid',$strWeibo['weiboid']);
+
+        #删除点赞ts_love
+        aac('pubs')->delLove('weibo','weiboid',$strWeibo['weiboid']);
+
 
         qiMsg('删除成功！');
     }

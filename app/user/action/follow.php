@@ -20,7 +20,7 @@ switch($ts){
 
 		if(is_array($arrUsers)){
 			foreach($arrUsers as $item){
-				$arrUser[] =  $new['user']->getOneUser($item['userid_follow']);
+				$arrUser[] =  $new['user']->getSimpleUser($item['userid_follow']);
 			}
 		}
 
@@ -33,7 +33,7 @@ switch($ts){
 	case "do":
 	
 		$userid = intval($TS_USER['userid']);
-		$userid_follow = intval($_GET['userid']);
+		$userid_follow = intval($_POST['userid']);
 
 		
 		if($userid == 0){
@@ -106,7 +106,7 @@ switch($ts){
 	case "un":
 	
 		$userid = intval($TS_USER['userid']);
-		$userid_follow = intval($_GET['userid']);
+		$userid_follow = intval($_POST['userid']);
 
 		
 		if($userid == 0){

@@ -50,6 +50,13 @@ if (valid_email ( $email ) == false)
 include 'thinksaas/sql/'.$select_sql.'.php';
 
 $db = new MySql ( $arrdb );
+
+$mysql_version = $db->getMysqlVersion();
+
+if(substr($mysql_version, 0, 3)<5.5){
+    qiMsg('MySQL数据库版本过低，请升级MySQL到5.4以上版本，建议5.5或者5.6');
+}
+
 include 'thinksaas/tsApp.php';
 
 // MySQL数据库缓存
@@ -77,9 +84,9 @@ if ($db) {
 	// 存入管理员数据
 	$salt = md5 ( rand () );
 	
-	$userid = $db->query ( "insert into " . $pre . "user (`pwd` , `salt`,`email`) values ('" . md5 ( $salt . $password ) . "', '$salt' ,'$email');" );
+	$userid = $db->query ( "insert into " . $pre . "user (`pwd` , `salt`,`email`,`phone`) values ('" . md5 ( $salt . $password ) . "', '$salt' ,'$email','$email');" );
 	
-	$db->query ( "insert into " . $pre . "user_info (`userid`,`username`,`email`,`isadmin`,`addtime`,`uptime`) values ('$userid','$username','$email','1','" . time () . "','" . time () . "')" );
+	$db->query ( "insert into " . $pre . "user_info (`userid`,`username`,`email`,`phone`,`isadmin`,`isverify`,`isverifyphone`,`isrenzheng`,`addtime`,`uptime`) values ('$userid','$username','$email','$email','1','1','1','1','" . time () . "','" . time () . "')" );
 	
 	// 更改网站信息
 	$db->query ( "update " . $pre . "system_options set `optionvalue`='$site_title' where `optionname`='site_title'" );

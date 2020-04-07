@@ -1,7 +1,7 @@
 <?php
 defined('IN_TS') or die('Access Denied.');
 
-class user extends tsApp{
+class user extends tsApp {
 
 	//构造函数
 	public function __construct($db){
@@ -13,43 +13,254 @@ class user extends tsApp{
 		}
 		
 		parent::__construct($db);
-	}
-	
-	//获取最新会员
-	function getNewUser($num){
-		$arrNewUserId = $this->findAll('user_info',null,'addtime desc','userid',$num);
-		foreach($arrNewUserId as $item){
-			$arrNewUser[] = $this->getOneUser($item['userid']);
+    }
+    
+    /**
+     * 用户登录
+     *
+     * @param [type] $userid
+     * @param string $phone
+     * @return void
+     */
+    public function login($userid,$phone=''){
+        
+        $strUserInfo = $this->find('user_info',array(
+            'userid'=>$userid,
+        ),'userid,username,path,face,isadmin,signin,uptime');
+
+        $this->update('user_info',array(
+            'userid'=>$strUserInfo['userid'],
+        ),array(
+            'uptime'=>time(),
+        ));
+
+        #清空验证码
+        if($phone){
+            $this->update('phone_code',array(
+                'phone'=>$phone,
+            ),array(
+                'code'=>'',
+            ));
+        }
+        
+        //用户session信息
+        $sessionData = array(
+            'userid' => $strUserInfo['userid'],
+            'username'	=> $strUserInfo['username'],
+            'path'	=> $strUserInfo['path'],
+            'face'	=> $strUserInfo['face'],
+            'isadmin'	=> $strUserInfo['isadmin'],
+            'signin'=>$strUserInfo['signin'],
+            'uptime'	=> $strUserInfo['uptime'],
+        );
+
+        $_SESSION['tsuser']	= $sessionData;
+        
+        //更新登录时间，用作自动登录
+        $autologin = base_convert(sha1(uniqid(mt_rand(), true)), 16, 36);
+        $this->update('user_info',array(
+            'userid'=>$strUserInfo['userid'],
+        ),array(
+            'ip'=>getIp(),  //更新登录ip
+            'autologin'=>$autologin,
+            'uptime'=>time(),   //更新登录时间
+        ));
+        
+        //记住登录Cookie，根据用户Email和最后登录时间
+        setcookie("ts_email", $strUserInfo['email'], time()+2592000,'/');
+        setcookie("ts_autologin", $autologin, time()+2592000,'/');
+        
+    }
+
+    /**
+     * 用户注册
+     *
+     * @param [type] $email
+     * @param string $username
+     * @param string $pwd
+     * @param integer $fuserid
+     * @return void
+     */
+    public function register($email,$username='',$pwd='',$fuserid=0){
+
+        $salt = md5(rand());
+        
+        if($pwd=='') $pwd = random(6);
+        
+		$userid = $this->create('user',array(
+			'pwd'=>md5($salt.$pwd),
+			'salt'=>$salt,
+			'email'=>$email,
+			'phone'=>$email,
+        ));
+
+        if($username=='') $username = 'TS'.$userid;
+
+        $isverifyphone = 0;
+
+        if(isPhone($email)==true){
+
+            $isverifyphone = 1;
+
+            #清空验证码
+            $this->update('phone_code',array(
+                'phone'=>$email,
+            ),array(
+                'code'=>'',
+            ));
+
+        }
+		
+		//插入用户信息			
+		$this->create('user_info',array(
+			'userid'	=> $userid,
+			'fuserid'	=> $fuserid,
+			'username' 	=> $username,
+            'email'		=> $email,
+            'phone'		=> $email,
+            'ip'		=> getIp(),
+            'isverifyphone'=>$isverifyphone,
+			'addtime'	=> time(),
+			'uptime'	=> time(),
+		));
+		
+		//默认加入小组
+		$isGroup = $this->find('user_options',array(
+			'optionname'=>'isgroup',
+		));
+		
+		if($isGroup['optionvalue']){
+			$arrGroup = explode(',',$isGroup['optionvalue']);
+			
+			if($arrGroup){
+				foreach($arrGroup as $key=>$item){
+					$groupUserNum = $this->findCount('group_user',array(
+						'userid'=>$userid,
+						'groupid'=>$item,
+					));
+					
+					if($groupUserNum == 0){
+						$this->create('group_user',array(
+							'userid'=>$userid,
+							'groupid'=>$item,
+							'addtime'=>time(),
+						));
+						
+						//统计更新
+						$count_user = $this->findCount('group_user',array(
+							'groupid'=>$item,
+						));
+						
+						$this->update('group',array(
+							'groupid'=>$item,
+						),array(
+							'count_user'=>$count_user,
+						));
+						
+					}
+				}
+			}
 		}
-		return $arrNewUser;
+		
+		//用户信息
+		$userData = $this->find('user_info',array(
+			'userid'=>$userid,
+		),'userid,username,path,face,isadmin,signin,uptime');
+		
+		//用户session信息
+		$_SESSION['tsuser']	= $userData;
+		
+		//发送消息
+		aac('message')->sendmsg(0,$userid,'亲爱的 '.$username.' ：您成功加入了 '.$GLOBALS['TS_SITE']['site_title'].'。在遵守本站的规定的同时，享受您的愉快之旅吧!');
+		
+		//注销邀请码并将关注邀请用户
+		if($$GLOBALS['TS_SITE']['isinvite']=='1'){
+			
+			//邀请码信息
+			$strInviteCode = $this->find('user_invites',array(
+				'invitecode'=>$invitecode,
+			));
+			
+			$this->create('user_follow',array(
+				'userid'=>$userid,
+				'userid_follow'=>$strInviteCode['userid'],
+			));
+			
+			//注销
+			$this->update('user_invites',array(
+				'invitecode'=>$invitecode,
+			),array(
+				'isused'=>'1',
+			));
+		}
+    }
+
+
+    /**
+     * 获取用户头像
+     * @param $strUser
+     * @return string
+     */
+	function getUserFace($strUser){
+        if($strUser['face']){
+            $strFace = tsXimg($strUser['face'],'user',120,120,$strUser['path'],1).'?v='.$strUser['uptime'];
+        }else{
+            $strFace = SITE_URL.'public/images/user_large.jpg';
+        }
+        return $strFace;
+    }
+	
+	/**
+     * 获取最新会员
+     */
+	function getNewUser($num){
+		$arrUser = $this->findAll('user_info',null,'addtime desc','userid,username,face,path,addtime,uptime',$num);
+		foreach($arrUser as $key=>$item){
+            $arrUser[$key]['face'] = $this->getUserFace($item);
+		}
+		return $arrUser;
 	}
 	
 	//获取活跃会员
-	function getHotUser($num){
-		$arrNewUserId = $this->findAll('user_info',null,'uptime desc','userid',$num);
-		foreach($arrNewUserId as $item){
-			$arrHotUser[] = $this->getOneUser($item['userid']);
-		}
-		return $arrHotUser;
+	public function getHotUser($num){
+        $arrUser = $this->findAll('user_info',null,'uptime desc','userid,username,face,path,addtime,uptime',$num);
+        foreach($arrUser as $key=>$item){
+            $arrUser[$key]['face'] = $this->getUserFace($item);
+        }
+        return $arrUser;
 	}
 	
 	//最多关注的用户
 	public function getFollowUser($num){
-		$arrUserId = $this->findAll('user_info',null,'count_followed desc','userid',$num);
-		foreach($arrUserId as $item){
-			$arrFollowUser[] = $this->getOneUser($item['userid']);
-		}
-		return $arrFollowUser;
+        $arrUser = $this->findAll('user_info',null,'count_followed desc','userid,username,face,path,count_followed,addtime,uptime',$num);
+        foreach($arrUser as $key=>$item){
+            $arrUser[$key]['face'] = $this->getUserFace($item);
+        }
+        return $arrUser;
 	}
 	
 	//最多积分的用户
 	public function getScoreUser($num){
-		$arrUserId = $this->findAll('user_info',null,'count_score desc','userid',$num);
-		foreach($arrUserId as $item){
-			$arrScoreUser[] = $this->getOneUser($item['userid']);
-		}
-		return $arrScoreUser;
+        $arrUser = $this->findAll('user_info',null,'count_score desc','userid,username,face,path,count_score,addtime,uptime',$num);
+        foreach($arrUser as $key=>$item){
+            $arrUser[$key]['face'] = $this->getUserFace($item);
+        }
+        return $arrUser;
 	}
+
+    #获取简单的用户信息
+    function getSimpleUser($userid){
+        $strUser = $this->find('user_info',array(
+            'userid'=>$userid,
+        ),'userid,username,face,path,uptime');
+        if($strUser){
+            $strUser['face'] = $this->getUserFace($strUser);
+            return $strUser;
+        }else{
+            $this->toEmpty($userid);
+        }
+        
+    }
 	
 	//获取一个用户的信息
 	function getOneUser($userid){
@@ -69,14 +280,7 @@ class user extends tsApp{
             $strUser['about'] = tsTitle($strUser['about']);
             $strUser['address'] = tsTitle($strUser['address']);
 
-            if($strUser['face'] && $strUser['path']){
-                $strUser['face'] = tsXimg($strUser['face'],'user',120,120,$strUser['path'],1);
-            }elseif($strUser['face'] && $strUser['path']==''){
-                $strUser['face']	= SITE_URL.'public/images/'.$strUser['face'];
-            }else{
-                //没有头像
-                $strUser['face']	= SITE_URL.'public/images/user_large.jpg';
-            }
+            $strUser['face'] = $this->getUserFace($strUser);
 
             $strUser['rolename'] = $this->getRole($strUser['allscore']);
 
@@ -134,12 +338,7 @@ class user extends tsApp{
 		}
 	}
 	
-	public function getOneArea($areaid){
-	
-		$strArea = $this->find('area',array('areaid'=>$areaid));
-		return $strArea;
-	
-	}
+
 	
 	//根据用户积分获取用户角色
 	public function getRole($score){
@@ -157,7 +356,7 @@ class user extends tsApp{
 		}
 	}
 	
-	/*
+	/**
 	 * 增加积分
 	 * $userid 用户ID
 	 * $scorename 积分名字 
@@ -268,36 +467,27 @@ class user extends tsApp{
 			
 		}
 		
-	}
+    }
 	
-	//清空用户的一切数据
+	//删除用户一切数据
 	function toEmpty($userid){
 	
 		$strUser = $this->find('user_info',array(
 			'userid'=>$userid,
-		));
+		),'userid,email,phone,face');
 		
-		//是否存在Email
-		$isEmail = $this->findCount('anti_email',array(
-			'email'=>$strUser['email'],
-		));
-		if($strUser['email'] && $isEmail==0){
-			$this->create('anti_email',array(
-				'email'=>$strUser['email'],
-				'addtime'=>date('Y-m-d H:i:s'),
-			));
-		}
-		
-		//article
-		$this->delete('article',array('userid'=>$userid));
-		$this->delete('article_comment',array('userid'=>$userid));
-		$this->delete('article_recommend',array('userid'=>$userid));
-		
-		//attach
-		$this->delete('attach',array('userid'=>$userid));
-		$this->delete('attach_album',array('userid'=>$userid));
-		
-		//user
+		#禁用用户Email账号
+        $this->replace('anti_email',array(
+            'email'=>$strUser['email'],
+        ),array(
+            'email'=>$strUser['email'],
+			'addtime'=>date('Y-m-d H:i:s'),
+        ));
+
+        #禁用用户手机号
+
+        #用户相关数据
+        unlink('uploadfile/user/'.$strUser['face']);
 		$this->delete('user',array('userid'=>$userid));
 		$this->delete('user_info',array('userid'=>$userid));
 		$this->delete('user_follow',array('userid'=>$userid));
@@ -305,17 +495,36 @@ class user extends tsApp{
 		$this->delete('user_gb',array('userid'=>$userid));
 		$this->delete('user_gb',array('touserid'=>$userid));
 		$this->delete('user_open',array('userid'=>$userid));
-		$this->delete('user_scores',array('userid'=>$userid));
 		$this->delete('user_score_log',array('userid'=>$userid));
 		
-		//group
-		$this->delete('group',array('userid'=>$userid,));
-		$this->delete('group_album',array('userid'=>$userid,));
+        #文章
+        $arrArticle = $this->findAll('article',array(
+            'userid'=>$userid,
+        ));
+        foreach($arrArticle as $key=>$item){
+            aac('article')->deleteArticle($item);
+        }
+        $this->delete('article_user',array('userid'=>$userid));
+
+        #草稿箱
+        $this->delete('draft',array('userid'=>$userid));
+
+        #编辑器上传的文件
+        $arrEditor = $this->findAll('editor',array(
+            'userid'=>$userid,
+        ));
+        foreach($arrEditor as $key=>$item){
+            unlink('uploadfile/editor/'.$item['url']);
+        }
+        $this->delete('editor',array('userid'=>$userid));
+
+        #小组
 		$this->delete('group_topic',array('userid'=>$userid));
 		$this->delete('group_user',array('userid'=>$userid));
-		$this->delete('group_topic_comment',array('userid'=>$userid));
-		$this->delete('group_topic_collect',array('userid'=>$userid));
-	
+		
+		//attach
+		$this->delete('attach',array('userid'=>$userid));
+		$this->delete('attach_album',array('userid'=>$userid));
 		
 		//message
 		$this->delete('message',array('userid'=>$userid));
@@ -324,40 +533,29 @@ class user extends tsApp{
 		//photo
 		$this->delete('photo',array('userid'=>$userid));
 		$this->delete('photo_album',array('userid'=>$userid));
-		$this->delete('photo_comment',array('userid'=>$userid));
 		
 		//tag
 		$this->delete('tag_user_index',array('userid'=>$userid));
 		
 		//weibo
 		$this->delete('weibo',array('userid'=>$userid));
-		$this->delete('weibo_comment',array('userid'=>$userid));
 		
-		//活动event
+		//活动ts_event
 		$this->delete('event',array('userid'=>$userid));
-		$this->delete('event_comment',array('userid'=>$userid));
 		$this->delete('event_users',array('userid'=>$userid));
 		
-		//问答ask
+        //问答ts_ask
+        $this->delete('ask',array('userid'=>$userid));
 		$this->delete('ask_comment',array('userid'=>$userid));
-		$this->delete('ask_comment_add',array('userid'=>$userid));
 		$this->delete('ask_comment_op',array('userid'=>$userid));
-		$this->delete('ask_question_add',array('userid'=>$userid));
-		$this->delete('ask_topic',array('userid'=>$userid));
-		$this->delete('ask_user_cate',array('userid'=>$userid));
-		$this->delete('ask_user_score',array('userid'=>$userid));
+        
+        #删除评论ts_comment
+        $this->delete('comment',array('userid'=>$userid));
+        #删除点赞ts_love
+        $this->delete('love',array('userid'=>$userid));
 		
 	}
 	
-	//获取locationid
-	function getLocationId($userid){
-		$strUser = $this->find('user_info',array(
-			'userid'=>$userid,
-		),'locationid');
-		
-		return intval($strUser['locationid']);
-		
-	}
 	
 	//销毁前台session退出登陆
 	function logout(){
@@ -370,7 +568,7 @@ class user extends tsApp{
     //用户签到
     function signin(){
 
-        $userid = intval($_SESSION['tsuser']['userid']);
+        $userid = intval($GLOBALS['TS_USER']['userid']);
 
         $zuotian = date('Y-m-d',strtotime("-1 day"));
 

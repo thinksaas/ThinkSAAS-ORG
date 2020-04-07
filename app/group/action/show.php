@@ -3,11 +3,9 @@ defined('IN_TS') or die('Access Denied.');
 
 //小组首页
 
-$groupid = intval($_GET['id']);
-
-$typeid = intval($_GET['typeid']);
-
-$isshow = intval($_GET['isshow']);
+$groupid = tsIntval($_GET['id']);
+$typeid = tsIntval($_GET['typeid']);
+$isshow = tsIntval($_GET['isshow']);
 
 //小组信息
 $strGroup = $new['group']->getOneGroup($groupid);
@@ -38,12 +36,12 @@ if(is_array($arrTopicTypes)){
 }
 
 //组长信息
-$strLeader = aac('user')->getOneUser($strGroup['userid']);
+$strLeader = aac('user')->getSimpleUser($strGroup['userid']);
 
 //判断会员是否加入该小组
 $isGroupUser = '';
 if(intval($TS_USER['userid'])){
-	$strUser = aac('user')->getOneUser(intval($TS_USER['userid']));
+	$strUser = aac('user')->getSimpleUser(intval($TS_USER['userid']));
 	$isGroupUser = $new['group']->find('group_user',array(
 		'userid'=>intval($TS_USER['userid']),
 		'groupid'=>$groupid,
@@ -58,7 +56,7 @@ if($strGroup['isaudit']=='1'){
 	
 }else{
 
-	$page = isset($_GET['page']) ? intval($_GET['page']) : 1;
+	$page = tsIntval($_GET['page'],1);
 	
 	$lstart = $page*30-30;
 
@@ -78,7 +76,7 @@ if($strGroup['isaudit']=='1'){
 			$arrTopic[$key]['title'] = tsTitle($item['title']);
 			$arrTopic[$key]['content'] = tsDecode($item['content']);
 			$arrTopic[$key]['typename'] = $arrTopicType[$item['typeid']]['typename'];
-			$arrTopic[$key]['user'] = aac('user')->getOneUser($item['userid']);
+			$arrTopic[$key]['user'] = aac('user')->getSimpleUser($item['userid']);
 			$arrTopic[$key]['group'] = aac('group')->getOneGroup($item['groupid']);
 		}
 	}
@@ -95,7 +93,7 @@ if($strGroup['isaudit']=='1'){
 	
 	if(is_array($groupUser)){
 		foreach($groupUser as $item){
-			$strUser = aac('user')->getOneUser($item['userid']);
+			$strUser = aac('user')->getSimpleUser($item['userid']);
 			if($strUser){
 				$arrGroupUser[] = $strUser;
 			}else{

@@ -8,14 +8,21 @@ switch($ts){
 		//用户是否登录
 		$userid = aac('user')->isLogin();
 
+        //判断发布者状态
+        if(aac('user')->isPublisher()==false) tsNotice('不好意思，你还没有权限发布内容！');
+
+        //发布时间限制
+        if(aac('system')->pubTime()==false) tsNotice('不好意思，当前时间不允许发布内容！');
+
+
 		$albumid = intval($_GET['albumid']);
 
 		$strAlbum = $new['photo']->find('photo_album',array(
 			'albumid'=>$albumid,
 		));
 		
-		$strAlbum['albumname'] = stripslashes($strAlbum['albumname']);
-		$strAlbum['albumdesc'] = stripslashes($strAlbum['albumdesc']);
+		$strAlbum['albumname'] = tsTitle($strAlbum['albumname']);
+		$strAlbum['albumdesc'] = tsTitle($strAlbum['albumdesc']);
 
 		if($userid != $strAlbum['userid']) {
 
@@ -57,28 +64,37 @@ switch($ts){
         if($strAlbum['userid']!=$userid){
             getJson('非法操作3！');
         }
+
+        $type = getImagetype($_FILES['file']['tmp_name']);
+        if(!in_array($type,array('jpg','gif','png','jpeg'))){
+            getJson('非法操作4！');
+        }
 		
 		$photoid = $new['photo']->create('photo',array(
 			'albumid'=>$strAlbum['albumid'],
 			'userid'=>$strAlbum['userid'],
-			'locationid'=>aac('user')->getLocationId($strAlbum['userid']),
 			'addtime'	=> date('Y-m-d H:i:s',$addtime),
 		));
 		
 		//上传
-		$arrUpload = tsUpload($_FILES['file'],$photoid,'photo',array('jpg','gif','png'));
-		
-		if($arrUpload){
+		$arrUpload = tsUpload($_FILES['file'],$photoid,'photo',array('jpg','png','jpeg'));
+
+		if($arrUpload && $arrUpload['path'] && $arrUpload['url']){
 
 			$new['photo']->update('photo',array(
 				'photoid'=>$photoid,
 			),array(
-				'photoname'=>$arrUpload['name'],
+				'title'=>$arrUpload['name'],
 				'phototype'=>$arrUpload['type'],
 				'path'=>$arrUpload['path'],
 				'photourl'=>$arrUpload['url'],
 				'photosize'=>$arrUpload['size'],
 			));
+
+
+			#生成对应大小的图片
+            tsXimg($arrUpload['url'],'photo',320,320,$arrUpload['path'],1);
+            tsXimg($arrUpload['url'],'photo',640,'',$arrUpload['path']);
 
 
 			#统计相册图片数
@@ -95,7 +111,13 @@ switch($ts){
 			//对积分进行出来
 			aac('user')->doScore($GLOBALS['TS_URL']['app'], $GLOBALS['TS_URL']['ac'], $GLOBALS['TS_URL']['ts'],$strAlbum['userid']);
 			
-		}
+		}else{
+
+		    $new['photo']->delete('photo',array(
+		        'photoid'=>$photoid,
+            ));
+
+        }
 
 
 		

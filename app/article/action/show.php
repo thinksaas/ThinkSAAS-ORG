@@ -1,7 +1,7 @@
 <?php
 defined ( 'IN_TS' ) or die ( 'Access Denied.' );
 
-$articleid = intval ( $_GET ['id'] );
+$articleid = tsIntval($_GET ['id']);
 
 $strArticle = $new ['article']->find ( 'article', array (
 		'articleid' => $articleid 
@@ -29,43 +29,36 @@ $tpUrl = tpPage($strArticle['content'],'article','show',array('id'=>$strArticle[
 $strArticle['content'] = tsDecode($strArticle['content'],$tp);
 
 $strArticle ['tags'] = aac ( 'tag' )->getObjTagByObjid ( 'article', 'articleid', $articleid );
-$strArticle ['user'] = aac ( 'user' )->getOneUser ( $strArticle ['userid'] );
+$strArticle ['user'] = aac ( 'user' )->getSimpleUser ( $strArticle ['userid'] );
 $strArticle ['cate'] = $new ['article']->find ( 'article_cate', array (
 		'cateid' => $strArticle ['cateid'] 
 ) );
 
 
+####文章关联视频APP开始####
+if($TS_APP['isarticlevideo']){
+    $arrVideo = $new['article']->getArticleVideo($strArticle['articleid']);
+}
+####文章关联视频APP开始####
+
+
 
 // 上一篇
 $strUp = $new['article']->find('article', "`articleid`< '$articleid' and `isaudit`='0'", 'articleid,title','articleid desc');
+if($strUp) $strUp['title'] = tsTitle($strUp['title']);
 // 下一篇
 $strNext = $new['article']->find('article', "`articleid`> '$articleid' and `isaudit`='0'", 'articleid,title','articleid asc');
+if($strNext) $strNext['title'] = tsTitle($strNext['title']);
 
 
 
 // 获取评论
-$page = isset ( $_GET ['page'] ) ? intval ( $_GET ['page'] ) : 1;
-$url = tsUrl ( 'article', 'show', array (
-		'id' => $articleid,
-		'page' => '' 
-) );
-$lstart = $page * 10 - 10;
-
-$arrComments = $new ['article']->findAll ( 'article_comment', array (
-		'articleid' => $articleid 
-), 'addtime desc', null, $lstart . ',10' );
-
-foreach ( $arrComments as $key => $item ) {
-	$arrComment [] = $item;
-	$arrComment[$key]['content'] = tsDecode($item['content']);
-	$arrComment [$key] ['user'] = aac ( 'user' )->getOneUser ( $item ['userid'] );
-}
-
-$commentNum = $new ['article']->findCount ( 'article_comment', array (
-		'articleid' => $articleid 
-) );
-
-$pageUrl = pagination ( $commentNum, 10, $page, $url );
+$page = tsIntval($_GET['page'],1);
+$url = tsUrl ('article','show', array ('id' => $articleid,'page'=>''));
+$lstart = $page * 15 - 15;
+$arrComment = aac('pubs')->getCommentList('article','articleid',$strArticle['articleid'],$page,$lstart,$strArticle['userid']);
+$commentNum = aac('pubs')->getCommentNum('article','articleid',$strArticle['articleid']);
+$pageUrl = pagination ( $commentNum, 15, $page, $url );
 
 // 标签
 $strArticle ['tags'] = aac ( 'tag' )->getObjTagByObjid ( 'article', 'articleid', $strArticle ['articleid'] );
@@ -73,7 +66,7 @@ $strArticle ['tags'] = aac ( 'tag' )->getObjTagByObjid ( 'article', 'articleid',
 //最新文章
 $arrArticle = $new ['article']->findAll ( 'article', array(
     'isaudit'=>0,
-), 'addtime desc', null, 10 );
+), 'addtime desc', 'articleid,title', 10 );
 
 // 推荐阅读
 $arrRecommend = $new ['article']->getRecommendArticle ();
@@ -82,6 +75,24 @@ $arrRecommend = $new ['article']->getRecommendArticle ();
 $arrHot7 = $new ['article']->getHotArticle ( 7);
 // 一月热门
 $arrHot30 = $new ['article']->getHotArticle ( 30);
+
+
+
+//判断用户可阅读文章：0可读1不可读
+$isread = 0;
+if($strArticle['score']>0) $isread = 1;
+if($TS_USER['userid'] && $strArticle['userid']==$TS_USER['userid']) $isread=0;
+if($TS_USER['userid'] && $strArticle['userid']!=$TS_USER['userid'] && $strArticle['score']>0){
+    $isArticleUser = $new['article']->findCount('article_user',array(
+        'articleid'=>$articleid,
+        'userid'=>$TS_USER['userid'],
+    ));
+    if($isArticleUser>0) $isread=0;
+}
+if($TS_USER['isadmin']==1) $isread=0;
+
+
+
 
 //把标签作为关键词
 if($strArticle['tags']){
@@ -100,8 +111,12 @@ $title = $strArticle ['title'];
 include template ( 'show' );
 
 // 统计查看次数
-$new ['article']->update ( 'article', array (
-		'articleid' => $strArticle ['articleid'] 
+$count_view = $strArticle ['count_view'] + 1;
+$new ['article']->update ('article', array(
+	'articleid' => $strArticle ['articleid'] 
 ), array (
-		'count_view' => $strArticle ['count_view'] + 1 
-) );
+	'count_view' => $count_view, 
+));
+
+#更新ptable
+aac('pubs')->upPtableView('article','articleid',$articleid,$count_view);

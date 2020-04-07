@@ -15,6 +15,42 @@ class article extends tsApp {
         parent::__construct($db);
     }
 
+    /**
+     * 删除文章
+     *
+     * @param [type] $strArticle
+     * @return void
+     */
+    public function deleteArticle($strArticle){
+
+        #删除封面图
+        if($strArticle['photo']){
+            unlink('uploadfile/article/'.$strArticle['photo']);
+            tsDimg($strArticle['photo'],'article','320','180',$strArticle['path']);
+        }
+
+        #删除ts_article
+        $this->delete('article',array(
+            'articleid' => $strArticle['articleid'],
+        ));
+
+        #删除ts_article_user
+        $this->delete('article_user',array(
+            'articleid' => $strArticle['articleid'],
+        ));
+
+        #删除评论ts_comment
+        aac('pubs')->delComment('article','articleid',$strArticle['articleid']);
+
+        #删除点赞ts_love
+        aac('pubs')->delLove('article','articleid',$strArticle['articleid']);
+
+        #删除ptable
+        aac('pubs')->delPtable('article','articleid',$strArticle['articleid']);
+
+    }
+
+
     //热门文章,1天，7天，30天
     /**
      * @param $day
@@ -22,13 +58,13 @@ class article extends tsApp {
      * @return mixed
      */
     public function getHotArticle($day, $cateid = 0) {
-        $startTime = time() - ($day * 3600 * 60);
+        $startTime = time() - ($day * 3600 * 24);
         $startTime = date('Y-m-d', $startTime);
 
         $endTime = date('Y-m-d');
 
         if ($day == 30) {
-            $endTime = date('Y-m-d', time() - (7 * 3600 * 60));
+            $endTime = date('Y-m-d', time() - (7 * 3600 * 24));
         }
 
         if ($cateid) {
@@ -65,7 +101,7 @@ class article extends tsApp {
 
         $arrArticle = $this->findAll('article', $arr, 'addtime desc', 'articleid,title', 10);
         foreach ($arrArticle as $key => $item) {
-            $arrArticle[$key]['title'] = htmlspecialchars($item['title']);
+            $arrArticle[$key]['title'] = tsTitle($item['title']);
         }
 
         return $arrArticle;

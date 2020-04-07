@@ -1,9 +1,16 @@
 <?php 
 defined('IN_TS') or die('Access Denied.');
 
+$userid = intval($GLOBALS['TS_USER']['userid']);
+
 switch($ts){
 
     case "":
+
+        if($userid==0){
+            echo 2;exit;
+        }
+
         if($new['user']->signin()){
             echo 1;exit;
         }else{
@@ -14,11 +21,18 @@ switch($ts){
 
     case "ajax":
 
-        $userid = intval($_SESSION['tsuser']['userid']);
         $strSign = $new['user']->find('sign',array(
             'userid'=>$userid,
             'addtime'=>date('Y-m-d'),
         ));
+
+        $strScore = $new['user']->find('user_score',array(
+			'app'=>'user',
+			'action'=>'signin',
+			'mg'=>'',
+			'ts'=>'',
+		));
+
         include template('signin_ajax');
         break;
 
